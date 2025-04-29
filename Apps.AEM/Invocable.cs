@@ -1,18 +1,18 @@
-using Apps.Appname.Api;
+using Apps.AEM.Api;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Invocation;
 
-namespace Apps.Appname;
+namespace Apps.AEM;
 
 public class Invocable : BaseInvocable
 {
-    protected AuthenticationCredentialsProvider[] Creds =>
+    protected AuthenticationCredentialsProvider[] Credentials =>
         InvocationContext.AuthenticationCredentialsProviders.ToArray();
-
     protected Client Client { get; }
+    
     public Invocable(InvocationContext invocationContext) : base(invocationContext)
     {
-        Client = new(Creds);
+        Client = new(Credentials);
     }
 }

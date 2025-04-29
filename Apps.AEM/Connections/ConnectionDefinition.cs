@@ -1,8 +1,8 @@
-﻿using Apps.Appname.Constants;
+using Apps.AEM.Constants;
 using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Connections;
 
-namespace Apps.Appname.Connections;
+namespace Apps.AEM.Connections;
 
 public class ConnectionDefinition : IConnectionDefinition
 {
@@ -14,12 +14,11 @@ public class ConnectionDefinition : IConnectionDefinition
             AuthenticationType = ConnectionAuthenticationType.Undefined,
             ConnectionProperties = new List<ConnectionProperty>
             {
-                new(CredsNames.Token) { DisplayName = "API Token", Sensitive = true}
+                new(CredNames.Token) { DisplayName = "API Token", Sensitive = true}
             }
         }
     };
 
-    public IEnumerable<AuthenticationCredentialsProvider> CreateAuthorizationCredentialsProviders(
-        Dictionary<string, string> values) => values.Select(x => new AuthenticationCredentialsProvider(x.Key, x.Value)
-        ).ToList();
+    public IEnumerable<AuthenticationCredentialsProvider> CreateAuthorizationCredentialsProviders(Dictionary<string, string> values) 
+        => values.Select(x => new AuthenticationCredentialsProvider(x.Key, x.Value)).ToList();
 }

@@ -1,4 +1,4 @@
-using Apps.Appname.Constants;
+using Apps.AEM.Constants;
 using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Exceptions;
 using Blackbird.Applications.Sdk.Utils.Extensions.Sdk;
@@ -6,7 +6,7 @@ using Blackbird.Applications.Sdk.Utils.RestSharp;
 using Newtonsoft.Json;
 using RestSharp;
 
-namespace Apps.Appname.Api;
+namespace Apps.AEM.Api;
 
 public class Client : BlackBirdRestClient
 {
@@ -15,12 +15,12 @@ public class Client : BlackBirdRestClient
         BaseUrl = new Uri(""),
     })
     {
-        this.AddDefaultHeader("Authorization", creds.Get(CredsNames.Token).Value);
+        this.AddDefaultHeader("Authorization", creds.Get(CredNames.Token).Value);
     }
 
     protected override Exception ConfigureErrorException(RestResponse response)
     {
-        var error = JsonConvert.DeserializeObject(response.Content);
+        var error = JsonConvert.DeserializeObject(response.Content!);
         var errorMessage = "";
 
         throw new PluginApplicationException(errorMessage);

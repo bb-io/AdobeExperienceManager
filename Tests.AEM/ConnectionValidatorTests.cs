@@ -1,8 +1,9 @@
-using Apps.Appname.Connections;
+using Apps.AEM.Connections;
 using Blackbird.Applications.Sdk.Common.Authentication;
-using Tests.Appname.Base;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Tests.AEM.Base;
 
-namespace Tests.Appname;
+namespace Tests.AEM;
 
 [TestClass]
 public class ConnectionValidatorTests : TestBase

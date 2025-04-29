@@ -1,13 +1,16 @@
-﻿using Blackbird.Applications.Sdk.Common;
+using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Metadata;
 
-namespace Apps.Appname;
+namespace Apps.AEM;
 
 public class Application : IApplication, ICategoryProvider
 {
     public IEnumerable<ApplicationCategory> Categories
     {
-        get => [];
+        get => 
+        [
+            ApplicationCategory.Cms
+        ];
         set { }
     }
 
