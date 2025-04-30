@@ -13,13 +13,14 @@ public class ConnectionValidator: IConnectionValidator
     {
         try
         {
-            var client = new Client(authenticationCredentialsProviders);
+            var client = new ApiClient(authenticationCredentialsProviders);
+            var request = new RestRequest("/content/services/bb-aem-connector/pages/events.json", Method.Get);
 
-            await client.ExecuteWithErrorHandling(new RestRequest());
-
+            var response = await client.ExecuteWithErrorHandling(request);
             return new()
             {
-                IsValid = true
+                IsValid = response.IsSuccessful,
+                Message = response.IsSuccessful ? "Connection is valid" : $"Connection failed: {response.Content}",
             };
         } catch(Exception ex)
         {

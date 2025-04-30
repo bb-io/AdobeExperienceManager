@@ -9,7 +9,7 @@ public class Invocable : BaseInvocable
 {
     protected AuthenticationCredentialsProvider[] Credentials =>
         InvocationContext.AuthenticationCredentialsProviders.ToArray();
-    protected Client Client { get; }
+    protected ApiClient Client { get; }
     
     public Invocable(InvocationContext invocationContext) : base(invocationContext)
     {

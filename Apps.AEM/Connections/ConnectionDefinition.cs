@@ -14,7 +14,18 @@ public class ConnectionDefinition : IConnectionDefinition
             AuthenticationType = ConnectionAuthenticationType.Undefined,
             ConnectionProperties = new List<ConnectionProperty>
             {
-                new(CredNames.Token) { DisplayName = "API Token", Sensitive = true}
+                new(CredNames.BaseUrl) 
+                { 
+                    DisplayName = "Base URL", 
+                    Description = "Base URL for the AEM instance. Example: https://author-xxxxx-xxxxx.adobeaemcloud.com",
+                    Sensitive = false
+                },
+                new(CredNames.IntegrationJsonCertificate)
+                {
+                    DisplayName = "Integration JSON certificate",
+                    Description = "Integration certificate in JSON format. Can be found in the Developer Console. Example: { \"ok\": true, \"integration\": { \"imsEndpoint\": \"ims-na1.adobelogin.com\", ... } \"statusCode\": 200}",
+                    Sensitive = true
+                }
             }
         }
     };
