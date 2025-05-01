@@ -35,7 +35,7 @@ public class ApiClient(IEnumerable<AuthenticationCredentialsProvider> credential
     {
         var result = new List<T>();
         var offset = 0;
-        var limit = 5;
+        var limit = 50;
         
         var limitParameter = request.Parameters.FirstOrDefault(p => p.Name?.ToString().Equals("limit", StringComparison.OrdinalIgnoreCase) == true);
         if (limitParameter != null && limitParameter.Value != null)
