@@ -17,9 +17,54 @@ public class ApiClient(IEnumerable<AuthenticationCredentialsProvider> credential
 {
     public override async Task<RestResponse> ExecuteWithErrorHandling(RestRequest request)
     {
-        var token = await TokenService.GetAccessToken(credentials);
+        request.AddHeader("Cache-Control", "no-cache");
+        
+        var token = await TokenService.GetAccessTokenAsync(credentials);
         request.AddHeader("Authorization", $"Bearer {token}");
-        return await base.ExecuteWithErrorHandling(request);
+
+        var response = await base.ExecuteWithErrorHandling(request);
+        if(response.ContentType == "text/html")
+        {
+            throw new PluginApplicationException($"We got an unexpected HTML response from the server. Please, verify that your AEM instance is up and running (not hibernated)");
+        }
+
+        return response;
+    }
+
+    public async Task<List<T>> Paginate<T>(RestRequest request)
+    {
+        var result = new List<T>();
+        var offset = 0;
+        var limit = 5;
+        
+        var limitParameter = request.Parameters.FirstOrDefault(p => p.Name?.ToString().Equals("limit", StringComparison.OrdinalIgnoreCase) == true);
+        if (limitParameter != null && limitParameter.Value != null)
+        {
+            limit = Convert.ToInt32(limitParameter.Value);
+        }
+        
+        bool hasMore;
+        do
+        {
+            var offsetParam = request.Parameters.FirstOrDefault(p => p.Name?.ToString().Equals("offset", StringComparison.OrdinalIgnoreCase) == true);
+            if (offsetParam != null)
+            {
+                request.Parameters.RemoveParameter(offsetParam);
+            }
+
+            request.AddQueryParameter("offset", offset);
+            var response = await ExecuteWithErrorHandling<BasePaginationDto<T>>(request);
+            if (response.Pages != null)
+            {
+                result.AddRange(response.Pages);
+            }
+            
+            hasMore = result.Count < response.Total;
+            offset += limit;
+            
+        } while (hasMore);
+        
+        return result;
     }
 
     protected override Exception ConfigureErrorException(RestResponse response)
