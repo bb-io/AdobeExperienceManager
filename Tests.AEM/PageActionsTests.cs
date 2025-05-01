@@ -1,7 +1,9 @@
 using Apps.AEM.Actions;
 using Apps.AEM.Models.Requests;
+using Blackbird.Applications.Sdk.Common.Files;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json;
+using System.IO;
 using Tests.AEM.Base;
 
 namespace Tests.AEM;
@@ -63,5 +65,31 @@ public class PageActionsTests : TestBase
         Assert.AreEqual("text/html", result.File.ContentType, "File content type should be text/html");
         
         Console.WriteLine($"Generated HTML file: {result.File.Name}");
+    }
+
+    [TestMethod]
+    public async Task UpdatePageFromHtmlAsync_WithValidInput_ShouldSucceed()
+    {
+        // Arrange
+        var actions = new PageActions(InvocationContext, FileManager);
+        var request = new UpdatePageFromHtmlRequest
+        {
+            TargetPagePath = "/content/bb-aem-connector/fr/fr/clear-skies",
+            File = new FileReference
+            {
+                Name = "Clear skies.html",
+                ContentType = "text/html"
+            }
+        };
+        
+        // Act
+        var response = await actions.UpdatePageFromHtmlAsync(request);
+
+        // Assert
+        Assert.IsNotNull(response, "Response should not be null");
+        System.Console.WriteLine(JsonConvert.SerializeObject(response, Formatting.Indented));
+        
+        Assert.IsFalse(string.IsNullOrEmpty(response.Message), "Response message should not be empty");
+        Assert.IsFalse(string.IsNullOrEmpty(response.Path), "Response path should not be empty");
     }
 }

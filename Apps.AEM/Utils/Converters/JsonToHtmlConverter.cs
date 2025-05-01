@@ -65,7 +65,6 @@ public static class JsonToHtmlConverter
         {
             string currentPath = AppendJsonPath(jsonPath, property.Key);
             
-            // Skip title in body as it's already in head
             if (currentPath == "jcr:content.jcr:title")
             {
                 continue;
@@ -74,8 +73,6 @@ public static class JsonToHtmlConverter
             if (property.Value?.Type == JTokenType.Object)
             {
                 var jObj = (JObject)property.Value;
-                
-                // Special case for text content with rich text
                 if (jObj["text"] != null && jObj["textIsRich"] != null && 
                     string.Equals(jObj["textIsRich"]?.ToString(), "true", StringComparison.OrdinalIgnoreCase))
                 {

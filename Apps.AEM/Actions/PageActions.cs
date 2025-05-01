@@ -3,8 +3,10 @@ using Apps.AEM.Models.Responses;
 using Apps.AEM.Utils.Converters;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
+using Blackbird.Applications.Sdk.Common.Exceptions;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
+using Newtonsoft.Json;
 using RestSharp;
 
 namespace Apps.AEM.Actions;
@@ -56,5 +58,39 @@ public class PageActions(InvocationContext invocationContext, IFileManagementCli
         var fileReference = await fileManagementClient.UploadAsync(memoryStream, "text/html", $"{title}.html");
 
         return new(fileReference);
+    }
+
+    [Action("Update page from HTML", Description = "Update a page using HTML content.")]
+    public async Task<UpdatePageFromHtmlResponse> UpdatePageFromHtmlAsync([ActionParameter] UpdatePageFromHtmlRequest pageRequest)
+    {
+        var fileStream = await fileManagementClient.DownloadAsync(pageRequest.File);
+        var memoryStream = new MemoryStream();
+        await fileStream.CopyToAsync(memoryStream);
+        memoryStream.Position = 0;
+
+        var htmlString = System.Text.Encoding.UTF8.GetString(memoryStream.ToArray());
+        var sourcePath = HtmlToJsonConverter.ExtractSourcePath(htmlString);
+        var jsonContent = HtmlToJsonConverter.ConvertToJson(htmlString);
+
+        var jsonString = JsonConvert.SerializeObject(new
+        {
+            sourcePath,
+            targetPath = pageRequest.TargetPagePath,
+            targetContent = jsonContent
+        }, Formatting.None);
+
+        var request = new RestRequest("/content/services/bb-aem-connector/page-importer.json", Method.Post);
+        request.AddHeader("Content-Type", "application/json");
+        request.AddHeader("Accept", "application/json");
+
+        request.AddStringBody(jsonString, DataFormat.Json);
+
+        var result = await Client.ExecuteWithErrorHandling<UpdatePageFromHtmlResponse>(request);
+        if(string.IsNullOrEmpty(result.Message))
+        {
+            throw new PluginApplicationException("Update failed. No message returned from server.");
+        }
+
+        return result;
     }
 }
