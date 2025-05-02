@@ -7,9 +7,15 @@ public class SearchPagesRequest
     [Display("Root path", Description = "The path under which pages are searched.")]
     public string? RootPath { get; set; }
 
-    [Display("Start date", Description = "Start date for filtering events (in ISO8601 format YYYY-MM-DDTHH:mm:ss.SSSZ or partial representations, like YYYY-MM-DD)")]
-    public DateTime? StartDate { get; set; }
+    [Display("Created after", Description = "Created after date for filtering pages")]
+    public DateTime? CreatedAfter { get; set; }
 
-    [Display("End date", Description = "End date for filtering events (in ISO8601 format YYYY-MM-DDTHH:mm:ss.SSSZ or partial representations, like YYYY-MM-DD).")]
-    public DateTime? EndDate { get; set; }
+    [Display("Created before", Description = "Created before date for filtering pages")]
+    public DateTime? CreatedBefore { get; set; }
+
+    [Display("Modified after", Description = "Modified after date for filtering pages")]
+    public DateTime? ModifiedAfter { get; set; } 
+
+    [Display("Modified before", Description = "Modified before date for filtering pages")]
+    public DateTime? ModifiedBefore { get; set; }
 }

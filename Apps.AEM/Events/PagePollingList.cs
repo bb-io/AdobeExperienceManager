@@ -13,7 +13,7 @@ public class PagePollingList(InvocationContext invocationContext) : Invocable(in
     public async Task<PollingEventResponse<PagesMemory, SearchPagesResponse>> OnPagesCreatedOrUpdatedAsync(PollingEventRequest<PagesMemory> request,
         [PollingEventParameter] OnPagesCreatedOrUpdatedRequest optionalRequests)
     {
-        if(request.Memory is null)
+        if (request.Memory is null)
         {
             return new()
             {
@@ -26,22 +26,21 @@ public class PagePollingList(InvocationContext invocationContext) : Invocable(in
             };
         }
 
-
-        var parameters = new Dictionary<string, string>
+        var parameters = new List<KeyValuePair<string, string>>
         {
-            { "startDate", request.Memory.LastTriggeredTime.ToString("yyyy-MM-ddTHH:mm:ssZ") },
-            { "endDate", DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ") },
-            { "events", "created" },
-            { "events", "modified" }
+            new("startDate", request.Memory.LastTriggeredTime.ToString("yyyy-MM-ddTHH:mm:ssZ")),
+            new("endDate", DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ")),
+            new("events", "created"),
+            new("events", "modified")
         };
 
-        if(optionalRequests.RootPath != null)
+        if (optionalRequests.RootPath != null)
         {
-            parameters.Add("rootPath", optionalRequests.RootPath);
+            parameters.Add(new("rootPath", optionalRequests.RootPath));
         }
 
         var createdAndUpdatedPages = await GetPagesAsync(parameters);
-        if(optionalRequests.RootPathIncludes != null && optionalRequests.RootPathIncludes.Any())
+        if (optionalRequests.RootPathIncludes != null && optionalRequests.RootPathIncludes.Any())
         {
             createdAndUpdatedPages = createdAndUpdatedPages.Where(page => optionalRequests.RootPathIncludes.Any(include => page.Path.Contains(include))).ToList();
         }
@@ -57,10 +56,10 @@ public class PagePollingList(InvocationContext invocationContext) : Invocable(in
         };
     }
 
-    private async Task<List<PageResponse>> GetPagesAsync(Dictionary<string, string> queryParams)
+    private async Task<List<PageResponse>> GetPagesAsync(List<KeyValuePair<string, string>> queryParams)
     {
         var request = new RestRequest("/content/services/bb-aem-connector/pages/events.json");
-        foreach(var param in queryParams)
+        foreach (var param in queryParams)
         {
             request.AddQueryParameter(param.Key, param.Value);
         }

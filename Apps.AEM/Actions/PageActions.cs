@@ -17,24 +17,9 @@ public class PageActions(InvocationContext invocationContext, IFileManagementCli
     [Action("Search pages", Description = "Search for pages based on provided criteria.")]
     public async Task<SearchPagesResponse> SearchPagesAsync([ActionParameter] SearchPagesRequest searchPagesRequest)
     {
-        var request = new RestRequest("/content/services/bb-aem-connector/pages/events.json");
-        if(searchPagesRequest.RootPath != null)
-        {
-            request.AddQueryParameter("rootPath", searchPagesRequest.RootPath);
-        }
-
-        if(searchPagesRequest.StartDate.HasValue)
-        {
-            request.AddQueryParameter("startDate", searchPagesRequest.StartDate.Value.ToString("yyyy-MM-ddTHH:mm:ssZ"));
-        }
-
-        if(searchPagesRequest.EndDate.HasValue)
-        {
-            request.AddQueryParameter("endDate", searchPagesRequest.EndDate.Value.ToString("yyyy-MM-ddTHH:mm:ssZ"));
-        }
-
-        var pages = await Client.Paginate<PageResponse>(request);
-        return new(pages);
+        var searchRequest = BuildPageSearchRequest(searchPagesRequest);
+        var pageResults = await Client.Paginate<PageResponse>(searchRequest);
+        return new(pageResults);
     }
 
     [Action("Get page as HTML", Description = "Get the HTML content of a page.")]
@@ -87,5 +72,55 @@ public class PageActions(InvocationContext invocationContext, IFileManagementCli
         }
 
         return result;
+    }
+
+    private RestRequest BuildPageSearchRequest(SearchPagesRequest searchCriteria)
+    {
+        var request = new RestRequest("/content/services/bb-aem-connector/pages/events.json");
+        
+        if(searchCriteria.RootPath != null)
+        {
+            request.AddQueryParameter("rootPath", searchCriteria.RootPath);
+        }
+
+        bool hasStartDate = searchCriteria.CreatedAfter.HasValue || searchCriteria.ModifiedAfter.HasValue;
+        bool hasEndDate = searchCriteria.CreatedBefore.HasValue || searchCriteria.ModifiedBefore.HasValue;
+
+        if(hasStartDate && hasEndDate)
+        {
+            throw new PluginMisconfigurationException("You can only set created date or modified date, not both.");
+        }
+
+        if(hasEndDate)
+        {
+            request.AddQueryParameter("events", "modified");
+        }
+
+        if(hasStartDate)
+        {
+            request.AddQueryParameter("events", "created");
+        }
+
+        if(searchCriteria.CreatedAfter.HasValue)
+        {
+            request.AddQueryParameter("startDate", searchCriteria.CreatedAfter.Value.ToString("yyyy-MM-ddTHH:mm:ssZ"));
+        }
+
+        if(searchCriteria.CreatedBefore.HasValue)
+        {
+            request.AddQueryParameter("endDate", searchCriteria.CreatedBefore.Value.ToString("yyyy-MM-ddTHH:mm:ssZ"));
+        }
+
+        if(searchCriteria.ModifiedAfter.HasValue)
+        {
+            request.AddQueryParameter("startDate", searchCriteria.ModifiedAfter.Value.ToString("yyyy-MM-ddTHH:mm:ssZ"));
+        }
+
+        if(searchCriteria.ModifiedBefore.HasValue)
+        {
+            request.AddQueryParameter("endDate", searchCriteria.ModifiedBefore.Value.ToString("yyyy-MM-ddTHH:mm:ssZ"));
+        }
+        
+        return request;
     }
 }
