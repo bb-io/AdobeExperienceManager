@@ -33,11 +33,6 @@ public class PageActions(InvocationContext invocationContext, IFileManagementCli
             request.AddQueryParameter("endDate", searchPagesRequest.EndDate.Value.ToString("yyyy-MM-ddTHH:mm:ssZ"));
         }
 
-        if(searchPagesRequest.Events != null && searchPagesRequest.Events.Any())
-        {
-            request.AddQueryParameter("events", string.Join(",", searchPagesRequest.Events!));
-        }
-
         var pages = await Client.Paginate<PageResponse>(request);
         return new(pages);
     }

@@ -12,7 +12,4 @@ public class SearchPagesRequest
 
     [Display("End date", Description = "End date for filtering events (in ISO8601 format YYYY-MM-DDTHH:mm:ss.SSSZ or partial representations, like YYYY-MM-DD).")]
     public DateTime? EndDate { get; set; }
-
-    [Display("Events", Description = "A list of event types to filter. Multiple values can be provided.")]
-    public IEnumerable<string>? Events { get; set; }
 }
