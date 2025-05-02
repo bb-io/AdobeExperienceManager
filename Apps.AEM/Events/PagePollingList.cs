@@ -9,7 +9,7 @@ namespace Apps.AEM.Events;
 [PollingEventList]
 public class PagePollingList(InvocationContext invocationContext) : Invocable(invocationContext)
 {
-    [PollingEvent("On pages created or updated", Description = "Polling event that periodically checks for new or updated pages. If the any pages are found, the event is triggered.")]
+    [PollingEvent("On content created or updated", Description = "Polling event that periodically checks for new or updated content. If the any content are found, the event is triggered.")]
     public async Task<PollingEventResponse<PagesMemory, SearchPagesResponse>> OnPagesCreatedOrUpdatedAsync(PollingEventRequest<PagesMemory> request,
         [PollingEventParameter] OnPagesCreatedOrUpdatedRequest optionalRequests)
     {
@@ -21,7 +21,7 @@ public class PagePollingList(InvocationContext invocationContext) : Invocable(in
                 Result = null,
                 Memory = new PagesMemory
                 {
-                    LastTriggeredTime = DateTime.UtcNow,
+                    LastTriggeredTime = DateTime.UtcNow
                 }
             };
         }

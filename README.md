@@ -49,15 +49,13 @@ Detailed instructions on how to install the plugin can be found in the [AEM plug
 
 ## Actions
 
-### Pages
-
-- **Search pages**: Search for pages based on provided criteria.
-- **Get page as HTML**: Get the HTML content of a page.
-- **Update page from HTML**: Update a page using HTML content.
+- **Search content**: Search for content based on provided criteria.
+- **Download content**:Download content as HTML.
+- **Upload content**: Upload content from HTML.
 
 ## Events
 
-- **On pages created or updated**: Polling event that periodically checks for new or updated pages. If the any pages are found, the event is triggered.
+- **On content created or updated**: Polling event that periodically checks for new or updated content. If the any content are found, the event is triggered.
 
 ## Feedback
 

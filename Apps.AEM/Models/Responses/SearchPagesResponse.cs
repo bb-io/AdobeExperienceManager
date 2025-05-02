@@ -4,7 +4,7 @@ namespace Apps.AEM.Models.Responses;
 
 public class SearchPagesResponse(List<PageResponse> pages)
 {
-    [Display("Pages")]
+    [Display("Content")]
     public List<PageResponse> Pages { get; set; } = pages;
 
     [Display("Total count")]

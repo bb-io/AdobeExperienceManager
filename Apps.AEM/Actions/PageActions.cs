@@ -14,7 +14,7 @@ namespace Apps.AEM.Actions;
 [ActionList]
 public class PageActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) : Invocable(invocationContext)
 {
-    [Action("Search pages", Description = "Search for pages based on provided criteria.")]
+    [Action("Search content", Description = "Search for content based on provided criteria.")]
     public async Task<SearchPagesResponse> SearchPagesAsync([ActionParameter] SearchPagesRequest searchPagesRequest)
     {
         var searchRequest = BuildPageSearchRequest(searchPagesRequest);
@@ -22,7 +22,7 @@ public class PageActions(InvocationContext invocationContext, IFileManagementCli
         return new(pageResults);
     }
 
-    [Action("Get page as HTML", Description = "Get the HTML content of a page.")]
+    [Action("Download content", Description = "Download content as HTML.")]
     public async Task<FileResponse> GetPageAsHtmlAsync([ActionParameter] PageRequest pageRequest)
     {
         var request = new RestRequest("/content/services/bb-aem-connector/page-exporter.json")
@@ -40,7 +40,7 @@ public class PageActions(InvocationContext invocationContext, IFileManagementCli
         return new(fileReference);
     }
 
-    [Action("Update page from HTML", Description = "Update a page using HTML content.")]
+    [Action("Upload content", Description = "Upload content from HTML.")]
     public async Task<UpdatePageFromHtmlResponse> UpdatePageFromHtmlAsync([ActionParameter] UpdatePageFromHtmlRequest pageRequest)
     {
         var fileStream = await fileManagementClient.DownloadAsync(pageRequest.File);
