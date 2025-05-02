@@ -47,7 +47,6 @@ public static class TokenService
         }
         
         var integration = authCertificateDto.Integration;
-        
         var privateKeyPem = integration.PrivateKey;
         privateKeyPem = privateKeyPem.Replace("\\r\\n", "\n").Replace("\\n", "\n");
         
