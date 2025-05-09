@@ -1,0 +1,7 @@
+{
+  "ConnectionDefinition": {
+    "base_url": "",
+    "integration_json_certificate": ""
+  },
+  "TestFolder": "TestFiles"
+}
