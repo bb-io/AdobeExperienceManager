@@ -46,12 +46,28 @@ Before you connect to AEM, you need to have the following:
 ## Actions
 
 - **Search content**: Search for content based on provided criteria.
-- **Download content**:Download content as HTML.
-- **Upload content**: Upload content from HTML.
+- **Download content**: Download content as HTML. Requires a content ID.
+- **Upload content**: Upload content from HTML. Requires a HTML file and target path as input.
 
 ## Events
 
 - **On content created or updated**: Polling event that periodically checks for new or updated content. If the any content are found, the event is triggered.
+
+## Example 
+
+Here's an example of how to set up a translation workflow with `AEM` and `DeepL` apps that will automatically translate content in AEM and send it to DeepL for translation.
+
+![AEM example](docs/images/aem_example.png)
+
+Here's a notes on how the example works:
+- The `On content created or updated` event is triggered every hour and checks for new or updated content in AEM. If any content is found, the event is triggered.
+- In the loop, the `Download content` action downloads the content from AEM in HTML format.
+- The `Translate document` action of `DeepL` app sends the downloaded content to DeepL for translation. 
+- The `Replace using Regex` action of `Blackbird Utilities` app replaces the original path to the target one in the translated content.
+
+![Utilitiy example](docs/images/utility_example.png)
+
+- The `Upload content` action uploads the translated content back to AEM.
 
 ## Feedback
 
