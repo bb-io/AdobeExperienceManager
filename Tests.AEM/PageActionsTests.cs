@@ -52,7 +52,7 @@ public class PageActionsTests : TestBase
         var actions = new PageActions(InvocationContext, FileManager);
         var request = new PageRequest
         {
-            PagePath = "/content/bb-aem-connector/us/en/clear-skies"
+            PagePath = "/content/bb-aem-connector/us/en/ancient-forest"
         };
         
         // Act
@@ -74,10 +74,10 @@ public class PageActionsTests : TestBase
         var actions = new PageActions(InvocationContext, FileManager);
         var request = new UpdatePageFromHtmlRequest
         {
-            TargetPagePath = "/content/bb-aem-connector/fr/fr/clear-skies",
+            TargetPagePath = "/content/bb-aem-connector/fr/fr/ancient-forest",
             File = new FileReference
             {
-                Name = "Clear skies.html",
+                Name = "Ancient Forest.html",
                 ContentType = "text/html"
             }
         };

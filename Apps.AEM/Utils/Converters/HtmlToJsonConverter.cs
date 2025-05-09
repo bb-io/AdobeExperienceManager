@@ -64,7 +64,9 @@ public static class HtmlToJsonConverter
 
                 if (IsRichTextPath(jsonPath) && element.Name != "span")
                 {
-                    UpdateJsonValue(jsonObj, jsonPath, element.OuterHtml);
+                    var cleanElement = element.CloneNode(true);
+                    cleanElement.Attributes.Remove("data-json-path");
+                    UpdateJsonValue(jsonObj, jsonPath, cleanElement.OuterHtml);
                 }
                 else
                 {
