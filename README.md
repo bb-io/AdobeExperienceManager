@@ -16,7 +16,7 @@ Before you connect to AEM, you need to have the following:
 - You have a technical account and created a private key for it so you can obtain a certificate to connect to AEM. Below in the `Steps to create technical account` section, you can find the steps to create a technical account and a private key and how to obtain a certificate.
 - You know your base URL for AEM environment. The base URL is the URL of your AEM instance, e.g. `https://author-xxxx-xxxxx.adobeaemcloud.com`.
 
-## Steps to create technical account
+## Steps to create technical account and get a certificate
 
 1. Open [Cloud Manager](https://experience.adobe.com/cloud-manager/landing.html).
 2. Select needed program. 
@@ -29,10 +29,6 @@ Before you connect to AEM, you need to have the following:
 ![image auth step 5](docs/images/auth_step_5.png)
 6. Use the `Download` button to obtain the raw data and store it in a file or another location from which it will be used for integration. 
 ![image auth step 6](docs/images/auth_step_6.png)
-
-## Install the plugin for AEM
-
-Detailed instructions on how to install the plugin can be found in the [AEM plugin repository](https://github.com/bb-io/AEM).
 
 ## Connecting
 
