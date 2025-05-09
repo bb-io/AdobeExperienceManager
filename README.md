@@ -37,7 +37,7 @@ Before you connect to AEM, you need to have the following:
 3. Name your connection for future reference e.g., 'My AEM'
 4. Fill in the following fields:
    - **Base URL**: Your AEM base URL (e.g., `https://author-xxxx-xxxxx.adobeaemcloud.com`)
-   - **Integration JSON certificate**: Integration certificate in JSON format. Can be found in the Developer Console. Example: { "ok": true, "integration": { "imsEndpoint": "ims-na1.adobelogin.com", ... } "statusCode": 200}
+   - **Integration JSON certificate**: Integration certificate in JSON format. Can be found in the Developer Console. Example: [ "ok": true, "integration": [ "imsEndpoint": "ims-na1.adobelogin.com", ... ] "statusCode": 200]
 5. Click _Connect_
 6. Confirm that the connection has appeared and the status is _Connected_
 
