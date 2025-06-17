@@ -63,11 +63,6 @@ public static class JsonToHtmlConverter
         metaCharset.SetAttributeValue("charset", "UTF-8");
         headNode.AppendChild(metaCharset);
 
-        var titleNode = doc.CreateElement("title");
-        string title = ExtractTitle(jsonObj);
-        titleNode.InnerHtml = title;
-        headNode.AppendChild(titleNode);
-
         var metaSourcePath = doc.CreateElement("meta");
         metaSourcePath.SetAttributeValue("name", "blackbird-source-path");
         metaSourcePath.SetAttributeValue("content", sourcePath);
@@ -117,11 +112,6 @@ public static class JsonToHtmlConverter
         foreach (var property in jsonObj)
         {
             string currentPath = AppendJsonPath(jsonPath, property.Key);
-            if (currentPath == "jcr:content.jcr:title")
-            {
-                continue;
-            }
-
             if (property.Value?.Type == JTokenType.Object)
             {
                 var jObj = (JObject)property.Value;

@@ -206,7 +206,6 @@ public class PageActions(InvocationContext invocationContext, IFileManagementCli
             return;
 
         var references = JsonToHtmlConverter.ExtractReferences(content);
-
         foreach (var reference in references)
         {
             if (string.IsNullOrEmpty(reference.ReferencePath) || processedPaths.Contains(reference.ReferencePath))
