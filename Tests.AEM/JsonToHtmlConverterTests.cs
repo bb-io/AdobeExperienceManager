@@ -31,7 +31,7 @@ public class JsonToHtmlConverterTests : TestBase
     public async Task ConvertToHtml_ValidJson_ReturnsExpectedHtml()
     {
         // Act
-        var html = JsonToHtmlConverter.ConvertToHtml(_testJson, "/content/test-page");
+        var html = JsonToHtmlConverter.ConvertToHtml(_testJson, "/content/test-page", new());
 
         // Assert
         Assert.IsFalse(string.IsNullOrEmpty(html), "HTML should not be empty");

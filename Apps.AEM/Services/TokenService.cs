@@ -7,15 +7,58 @@ using System.Security.Cryptography;
 using Microsoft.IdentityModel.Tokens;
 using Apps.AEM.Models.Dtos;
 using Newtonsoft.Json;
+using System.Collections.Concurrent;
 
 namespace Apps.AEM.Services;
 
 public static class TokenService
 {
+    private static readonly ConcurrentDictionary<string, TokenCacheItem> AccessTokenCache = new();
+    private static readonly ConcurrentDictionary<string, RSAWrapper> RsaCache = new();
+    private static readonly TimeSpan DefaultTokenLifetime = TimeSpan.FromMinutes(55);
+
+    private class TokenCacheItem
+    {
+        public string Token { get; set; }
+        public DateTime ExpiresAt { get; set; }
+        
+        public bool IsExpired => DateTime.UtcNow >= ExpiresAt;
+    }
+
+    private class RSAWrapper : IDisposable
+    {
+        public RSA Rsa { get; private set; }
+        private bool _disposed = false;
+
+        public RSAWrapper(string pemKey)
+        {
+            Rsa = RSA.Create();
+            Rsa.ImportFromPem(pemKey.ToCharArray());
+        }
+
+        public void Dispose()
+        {
+            if (!_disposed)
+            {
+                Rsa.Dispose();
+                _disposed = true;
+            }
+        }
+    }
+
     public static async Task<string> GetAccessTokenAsync(IEnumerable<AuthenticationCredentialsProvider> credentials)
     {
-        var tokenRequest = new RestRequest("/ims/exchange/jwt", Method.Post);
         var technicalAccount = credentials.GetTechnicalAccount();
+        string cacheKey = technicalAccount.ClientId;
+        
+        // Try to get from cache first
+        if (AccessTokenCache.TryGetValue(cacheKey, out var cacheItem) && !cacheItem.IsExpired)
+        {
+            return cacheItem.Token;
+        }
+        
+        // If not in cache or expired, get a new token
+        var tokenRequest = new RestRequest("/ims/exchange/jwt", Method.Post);
 
         tokenRequest.AddHeader("Cache-Control", "no-cache");
         tokenRequest.AlwaysMultipartFormData = true;
@@ -32,7 +75,16 @@ public static class TokenService
             throw new Exception($"Failed to get access token: {response.ErrorMessage} - {response.Content}");
         }
 
-        return DeserializeAccessToken(response.Content!);
+        var accessToken = DeserializeAccessToken(response.Content!);
+        
+        // Cache the token
+        AccessTokenCache[cacheKey] = new TokenCacheItem
+        {
+            Token = accessToken,
+            ExpiresAt = DateTime.UtcNow.Add(DefaultTokenLifetime)
+        };
+        
+        return accessToken;
     }
 
     public static string GetJwtToken(IEnumerable<AuthenticationCredentialsProvider> credentials)
@@ -50,8 +102,11 @@ public static class TokenService
         var privateKeyPem = integration.PrivateKey;
         privateKeyPem = privateKeyPem.Replace("\\r\\n", "\n").Replace("\\n", "\n");
         
-        using var rsa = RSA.Create();
-        rsa.ImportFromPem(privateKeyPem.ToCharArray());
+        // Cache key for RSA object
+        string rsaCacheKey = technicalAccount.ClientId;
+        
+        // Get or create RSA wrapper
+        var rsaWrapper = RsaCache.GetOrAdd(rsaCacheKey, _ => new RSAWrapper(privateKeyPem));
         
         var handler = new JwtSecurityTokenHandler();
         var descriptor = new SecurityTokenDescriptor
@@ -64,7 +119,7 @@ public static class TokenService
             ]),
             Audience = $"https://{integration.ImsEndpoint}/c/{technicalAccount.ClientId}",
             Expires = DateTime.UtcNow.AddSeconds(30),
-            SigningCredentials = new SigningCredentials(new RsaSecurityKey(rsa), SecurityAlgorithms.RsaSha256)
+            SigningCredentials = new SigningCredentials(new RsaSecurityKey(rsaWrapper.Rsa), SecurityAlgorithms.RsaSha256)
         };
         
         var token = handler.CreateToken(descriptor);
@@ -80,5 +135,25 @@ public static class TokenService
         }
 
         return accessTokenDto.AccessToken;
+    }
+    
+    // Method to clear cache if needed
+    public static void ClearTokenCache()
+    {
+        AccessTokenCache.Clear();
+        
+        // Dispose RSA instances before clearing the cache
+        foreach (var wrapper in RsaCache.Values)
+        {
+            try
+            {
+                wrapper.Dispose();
+            }
+            catch
+            {
+                // Ignore disposal errors
+            }
+        }
+        RsaCache.Clear();
     }
 }

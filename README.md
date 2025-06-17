@@ -46,8 +46,14 @@ Before you connect to AEM, you need to have the following:
 ## Actions
 
 - **Search content**: Search for content based on provided criteria.
-- **Download content**: Download content as HTML. Requires a content ID.
-- **Upload content**: Upload content from HTML. Requires a HTML file and target path as input.
+- **Download content**: Download content as HTML. Requires a content ID. This action supports next optional inputs:
+   - **Include reference content**: If set to true, the action will include reference content in the downloaded HTML.
+- **Upload content**: Upload content from HTML. Requires a HTML file and target path as input. This action supports the following inputs:
+   - **File** (mandatory): The HTML file to upload.
+   - **Target page path** (mandatory): The path where the content will be uploaded to.
+   - **Source language** (optional): The language path segment in the source content URL. Required for reference content uploads. Example: If your content path is '/content/my-site/en/us/page', specify '/en/us' as the source language.
+   - **Target language** (optional): The language path segment to replace the source language. Required for reference content uploads. Example: To convert from '/content/my-site/en/us/page' to '/content/my-site/fr/fr/page', specify '/fr/fr' as the target language.
+   - **Ignore reference content errors** (optional): When set to true, errors that occur while updating reference content will be ignored.
 
 ## Events
 

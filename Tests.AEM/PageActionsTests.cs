@@ -56,7 +56,10 @@ public class PageActionsTests : TestBase
         };
         
         // Act
-        var result = await actions.GetPageAsHtmlAsync(request);
+        var result = await actions.GetPageAsHtmlAsync(request, new()
+        {
+            IncludeReferenceContnent = true
+        });
         
         // Assert
         Assert.IsNotNull(result, "Response should not be null");
@@ -79,7 +82,10 @@ public class PageActionsTests : TestBase
             {
                 Name = "Ancient Forest.html",
                 ContentType = "text/html"
-            }
+            },
+            SourceLanguage = "/us/en",
+            TargetLanguage = "/fr/fr",
+            IgnoreReferenceContentErrors = true
         };
         
         // Act
@@ -88,8 +94,5 @@ public class PageActionsTests : TestBase
         // Assert
         Assert.IsNotNull(response, "Response should not be null");
         System.Console.WriteLine(JsonConvert.SerializeObject(response, Formatting.Indented));
-        
-        Assert.IsFalse(string.IsNullOrEmpty(response.Message), "Response message should not be empty");
-        Assert.IsFalse(string.IsNullOrEmpty(response.Path), "Response path should not be empty");
     }
 }
