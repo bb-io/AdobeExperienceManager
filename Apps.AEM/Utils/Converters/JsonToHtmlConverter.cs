@@ -25,7 +25,7 @@ public static class JsonToHtmlConverter
 
         var references = new List<ReferenceDto>();
         var referencesToken = jsonObj["references"];
-        
+
         if (referencesToken != null && referencesToken.Type == JTokenType.Array)
         {
             var referencesArray = (JArray)referencesToken;
@@ -44,7 +44,7 @@ public static class JsonToHtmlConverter
                 }
             }
         }
-        
+
         return references;
     }
 
@@ -111,6 +111,10 @@ public static class JsonToHtmlConverter
     {
         foreach (var property in jsonObj)
         {
+            // Skip the references array to prevent adding reference metadata to the visible content
+            if (property.Key == "references")
+                continue;
+                
             string currentPath = AppendJsonPath(jsonPath, property.Key);
             if (property.Value?.Type == JTokenType.Object)
             {
@@ -144,6 +148,10 @@ public static class JsonToHtmlConverter
 
     private static void ProcessJsonArray(JArray array, HtmlNode parentNode, HtmlDocument doc, string jsonPath)
     {
+        // Skip processing if this is the references array
+        if (jsonPath.Equals("references"))
+            return;
+            
         for (int i = 0; i < array.Count; i++)
         {
             var item = array[i];
@@ -151,11 +159,6 @@ public static class JsonToHtmlConverter
 
             if (item.Type == JTokenType.Object)
             {
-                if (jsonPath.Equals("references"))
-                {
-                    continue;
-                }
-
                 var container = doc.CreateElement("div");
                 container.SetAttributeValue("data-json-path", itemPath);
                 parentNode.AppendChild(container);

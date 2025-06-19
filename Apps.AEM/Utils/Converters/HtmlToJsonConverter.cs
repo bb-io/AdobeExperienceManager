@@ -82,6 +82,13 @@ public static class HtmlToJsonConverter
                         continue;
                     }
 
+                    // For reference content, remove "references." prefix from JSON paths
+                    if (!isRoot && !string.IsNullOrEmpty(referencePath) && 
+                        jsonPath.StartsWith("references.", StringComparison.OrdinalIgnoreCase))
+                    {
+                        jsonPath = jsonPath.Substring("references.".Length);
+                    }
+
                     if (IsRichTextPath(jsonPath) && element.Name != "span")
                     {
                         var cleanElement = element.CloneNode(true);
