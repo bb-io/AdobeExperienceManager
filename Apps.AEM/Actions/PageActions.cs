@@ -117,7 +117,7 @@ public class PageActions(InvocationContext invocationContext, IFileManagementCli
             return path;
         }
         
-        return path.Replace($"/{sourceLanguage}", $"/{targetLanguage}");
+        return path.Replace(sourceLanguage, targetLanguage);
     }
     
     private void ModifyReferencePaths(IEnumerable<ReferenceEntity> references, string sourceLanguage, string targetLanguage)

@@ -52,7 +52,7 @@ public class PageActionsTests : TestBase
         var actions = new PageActions(InvocationContext, FileManager);
         var request = new PageRequest
         {
-            PagePath = "/content/bb-aem-connector/us/en/ancient-forest"
+            PagePath = "/content/wknd/us/en/about-us"
         };
         
         // Act
@@ -77,14 +77,14 @@ public class PageActionsTests : TestBase
         var actions = new PageActions(InvocationContext, FileManager);
         var request = new UpdatePageFromHtmlRequest
         {
-            TargetPagePath = "/content/bb-aem-connector/fr/fr/ancient-forest",
+            TargetPagePath = "/content/wknd/de/de/about-us",
             File = new FileReference
             {
-                Name = "Ancient Forest.html",
+                Name = "About Us.html",
                 ContentType = "text/html"
             },
-            SourceLanguage = "/us/en",
-            TargetLanguage = "/fr/fr",
+            SourceLanguage = "/en",
+            TargetLanguage = "/fr",
             IgnoreReferenceContentErrors = true
         };
         
