@@ -13,7 +13,8 @@ AEM (Adobe Experience Manager) is a Content Management System (CMS) that allows 
 Before you connect to AEM, you need to have the following:
 
 - AEM instance running and accessible from the Blackbird platform.
-- You have a technical account and created a private key for it so you can obtain a certificate to connect to AEM. Below in the `Steps to create technical account` section, you can find the steps to create a technical account and a private key and how to obtain a certificate.
+- The Blackbird AEM plugin installed on your AEM instance. Its distribution and installation instructions can be found [here](https://github.com/bb-io/AEM) (prerequisites 1-8) and an AEM maintainer/developer should perform this installation.
+- You have a technical account and created a private key for it so you can obtain a certificate to connect to AEM (after installing the plugin). Below in the `Steps to create technical account` section, you can find the steps to create a technical account and a private key and how to obtain a certificate.
 - You know your base URL for AEM environment. The base URL is the URL of your AEM instance, e.g. `https://author-xxxx-xxxxx.adobeaemcloud.com`.
 
 ## Steps to create technical account and get a certificate
