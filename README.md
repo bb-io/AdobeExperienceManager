@@ -48,7 +48,7 @@ Before you connect to AEM, you need to have the following:
 
 - **Search content**: Search for content based on provided criteria.
 - **Download content**: Download content as HTML. Requires a content ID. This action supports next optional inputs:
-   - **Include reference content**: If set to true, the action will include reference content in the downloaded HTML.
+   - **Include reference content**: If set to true, the action will include reference content in the downloaded HTML, this referenced content can be other pages, content fragments, experience fragments, etc.
 - **Upload content**: Upload content from HTML. Requires a HTML file and target path as input. This action supports the following inputs:
    - **File** (mandatory): The HTML file to upload.
    - **Target page path** (mandatory): The path where the content will be uploaded to.
@@ -59,6 +59,8 @@ Before you connect to AEM, you need to have the following:
 ## Events
 
 - **On content created or updated**: Polling event that periodically checks for new or updated content. If the any content are found, the event is triggered.
+
+> **Note on compatible content**: Blackbird supports all content types in the default page hierarchy: pages, content fragments, experience fragments, assets, etc. We are currently working on also supporting 'Guides' and 'DITA' content.
 
 ## Example 
 
