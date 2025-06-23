@@ -6,14 +6,14 @@ Blackbird is the new automation backbone for the language technology industry. B
 
 <!-- begin docs -->
 
-AEM (Adobe Experience Manager) is a Content Management System (CMS) that allows users and companies to easily build websites, apps, and manage web pages and content. AEM is used by developers and marketers to organize and distribute content across digital channels.
+AEM (Adobe Experience Manager) is a Content Management System (CMS) that allows users and companies to easily build websites, apps, and manage web pages and content. AEM is used by developers and marketers to organize and distribute content across digital channels. This App supports both the on-premise version of AEM as well as the AEM as a Cloud Service version.
 
 ## Before setting up
 
 Before you connect to AEM, you need to have the following:
 
 - AEM instance running and accessible from the Blackbird platform.
-- The Blackbird AEM plugin installed on your AEM instance. Its distribution and installation instructions can be found [here](https://github.com/bb-io/AEM) (prerequisites 1-8) and an AEM maintainer/developer should perform this installation.
+- The Blackbird AEM plugin installed on your AEM instance. Its distribution and installation instructions can be found [here](https://github.com/bb-io/AEM) (prerequisites 1-8) and an AEM maintainer/developer should perform this installation. Note that if you use the on-premise verison you should use [these instructions](https://github.com/bb-io/AEM/blob/main-aem-on-prem/README.md).
 - You have a technical account and created a private key for it so you can obtain a certificate to connect to AEM (after installing the plugin). Below in the `Steps to create technical account` section, you can find the steps to create a technical account and a private key and how to obtain a certificate.
 - You know your base URL for AEM environment. The base URL is the URL of your AEM instance, e.g. `https://author-xxxx-xxxxx.adobeaemcloud.com`.
 
