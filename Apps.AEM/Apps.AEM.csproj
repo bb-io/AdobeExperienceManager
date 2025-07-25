@@ -4,9 +4,9 @@
         <TargetFramework>net8.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <Product>AEM [Beta]</Product>
+        <Product>AEM Cloud [Beta]</Product>
         <Description>AEM (Adobe Experience Manager) is a Content Management System (CMS) that allows users and companies to easily build websites, apps, and manage web pages and content. AEM is used by developers and marketers to organize and distribute content across digital channels.</Description>
-        <Version>1.0.2</Version>
+        <Version>1.0.3</Version>
         <PackageId>Apps.AEM</PackageId>
         <AssemblyName>Apps.AEM</AssemblyName>
     </PropertyGroup>
