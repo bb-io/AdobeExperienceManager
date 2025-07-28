@@ -1,8 +1,8 @@
 using Apps.AEM.Events.Models;
 using Apps.AEM.Models.Responses;
+using Apps.AEM.Utils;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.Sdk.Common.Polling;
-using RestSharp;
 
 namespace Apps.AEM.Events;
 
@@ -19,27 +19,23 @@ public class PagePollingList(InvocationContext invocationContext) : Invocable(in
             {
                 FlyBird = false,
                 Result = null,
-                Memory = new PagesMemory
-                {
-                    LastTriggeredTime = DateTime.UtcNow
-                }
+                Memory = new PagesMemory { LastTriggeredTime = DateTime.UtcNow }
             };
         }
 
-        var parameters = new List<KeyValuePair<string, string>>
+        var searchRequest = ContentSearch.BuildRequest(new()
         {
-            new("startDate", request.Memory.LastTriggeredTime.ToString("yyyy-MM-ddTHH:mm:ssZ")),
-            new("endDate", DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ")),
-            new("events", "created"),
-            new("events", "modified")
-        };
+            RootPath = optionalRequests.RootPath,
+            StartDate = request.Memory.LastTriggeredTime,
+            EndDate = DateTime.UtcNow,
+            Tags = optionalRequests.Tags,
+            Keyword = optionalRequests.Keyword,
+            ContentType = optionalRequests.ContentType,
+            Events = optionalRequests.Events,
+        });
 
-        if (optionalRequests.RootPath != null)
-        {
-            parameters.Add(new("rootPath", optionalRequests.RootPath));
-        }
+        var createdAndUpdatedPages = await Client.Paginate<PageResponse>(searchRequest);
 
-        var createdAndUpdatedPages = await GetPagesAsync(parameters);
         if (optionalRequests.RootPathIncludes != null && optionalRequests.RootPathIncludes.Any())
         {
             createdAndUpdatedPages = createdAndUpdatedPages.Where(page => optionalRequests.RootPathIncludes.Any(include => page.Path.Contains(include))).ToList();
@@ -49,21 +45,7 @@ public class PagePollingList(InvocationContext invocationContext) : Invocable(in
         {
             FlyBird = createdAndUpdatedPages.Count > 0,
             Result = new(createdAndUpdatedPages),
-            Memory = new PagesMemory
-            {
-                LastTriggeredTime = DateTime.UtcNow
-            }
+            Memory = new PagesMemory { LastTriggeredTime = DateTime.UtcNow }
         };
-    }
-
-    private async Task<List<PageResponse>> GetPagesAsync(List<KeyValuePair<string, string>> queryParams)
-    {
-        var request = new RestRequest("/content/services/bb-aem-connector/pages/events.json");
-        foreach (var param in queryParams)
-        {
-            request.AddQueryParameter(param.Key, param.Value);
-        }
-
-        return await Client.Paginate<PageResponse>(request);
     }
 }
