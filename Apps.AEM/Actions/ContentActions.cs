@@ -13,8 +13,8 @@ using RestSharp;
 
 namespace Apps.AEM.Actions;
 
-[ActionList]
-public class PageActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) : Invocable(invocationContext)
+[ActionList("Content")]
+public class ContentActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) : Invocable(invocationContext)
 {
     [Action("Search content", Description = "Search for content based on provided criteria.")]
     public async Task<SearchPagesResponse> SearchPagesAsync([ActionParameter] SearchPagesRequest searchPagesRequest)

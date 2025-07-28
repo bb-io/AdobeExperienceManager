@@ -3,19 +3,18 @@ using Apps.AEM.Models.Requests;
 using Blackbird.Applications.Sdk.Common.Files;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json;
-using System.IO;
 using Tests.AEM.Base;
 
 namespace Tests.AEM;
 
 [TestClass]
-public class PageActionsTests : TestBase
+public class ContentActionsTests : TestBase
 {
     [TestMethod]
     public async Task SearchPagesAsync_NoParameters_ShouldReturnPages()
     {
         // Arrange
-        var actions = new PageActions(InvocationContext, FileManager);
+        var actions = new ContentActions(InvocationContext, FileManager);
         
         // Act
         var result = await actions.SearchPagesAsync(new SearchPagesRequest());
@@ -29,7 +28,7 @@ public class PageActionsTests : TestBase
     public async Task SearchPagesAsync_WithRootPath_ShouldReturnFilteredPages()
     {
         // Arrange
-        var actions = new PageActions(InvocationContext, FileManager);
+        var actions = new ContentActions(InvocationContext, FileManager);
         var request = new SearchPagesRequest 
         {
             RootPath = "/content/bb-aem-connector"
@@ -49,7 +48,7 @@ public class PageActionsTests : TestBase
     public async Task GetPageAsHtmlAsync_WithValidPath_ShouldReturnFileReference()
     {
         // Arrange
-        var actions = new PageActions(InvocationContext, FileManager);
+        var actions = new ContentActions(InvocationContext, FileManager);
         var request = new PageRequest
         {
             PagePath = "/content/wknd/us/en/about-us"
@@ -74,7 +73,7 @@ public class PageActionsTests : TestBase
     public async Task UpdatePageFromHtmlAsync_WithValidInput_ShouldSucceed()
     {
         // Arrange
-        var actions = new PageActions(InvocationContext, FileManager);
+        var actions = new ContentActions(InvocationContext, FileManager);
         var request = new UpdatePageFromHtmlRequest
         {
             TargetPagePath = "/content/wknd/de/de/about-us",
