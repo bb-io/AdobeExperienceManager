@@ -31,7 +31,7 @@ public class ApiClient(IEnumerable<AuthenticationCredentialsProvider> credential
         return response;
     }
 
-    public async Task<List<T>> Paginate<T>(RestRequest request)
+    public async Task<List<T>> Paginate<T>(RestRequest request, int maxResultsToFetch = 1000)
     {
         var result = new List<T>();
         var offset = 0;
@@ -54,12 +54,17 @@ public class ApiClient(IEnumerable<AuthenticationCredentialsProvider> credential
 
             request.AddQueryParameter("offset", offset);
             var response = await ExecuteWithErrorHandling<BasePaginationDto<T>>(request);
-            if (response.Pages != null)
+            if (response.Content != null)
             {
-                result.AddRange(response.Pages);
+                result.AddRange(response.Content);
             }
-            
-            hasMore = result.Count < response.Total;
+
+            if (result.Count >= maxResultsToFetch)
+            {
+                break;
+            }
+
+            hasMore = response.More;
             offset += limit;
             
         } while (hasMore);
