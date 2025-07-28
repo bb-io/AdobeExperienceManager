@@ -24,7 +24,7 @@ public static class ContentSearch
         }
 
         // Content type filter
-        request.AddQueryParameter("type", searchParams.ContentType ?? DataTypes.Page);
+        request.AddQueryParameter("type", searchParams.ContentType ?? ContentTypes.Page);
 
         // Event types
         var events = searchParams.Events

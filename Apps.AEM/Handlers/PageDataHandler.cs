@@ -11,7 +11,7 @@ public class PageDataHandler(InvocationContext invocationContext) : Invocable(in
     public async Task<IEnumerable<DataSourceItem>> GetDataAsync(DataSourceContext context, CancellationToken cancellationToken)
     {
         var request = new RestRequest("/content/services/bb-aem-connector/pages/events.json");
-        request.AddParameter("type", DataTypes.Page);
+        request.AddParameter("type", ContentTypes.Page);
 
         if (!string.IsNullOrEmpty(context.SearchString))
         {

@@ -59,6 +59,7 @@ Before you connect to AEM Cloud, you need to have the following:
 ## Events
 
 - **On content created or updated**: Polling event that periodically checks for new or updated content. If the any content are found, the event is triggered.
+- **On tag added** Periodically checks for new content with any of the specified tags. If there is any content found, the event is triggered.
 
 > **Note on compatible content**: Blackbird supports all content types in the default page hierarchy: pages, content fragments, experience fragments, assets, etc. We are currently working on also supporting 'Guides' and 'DITA' content.
 

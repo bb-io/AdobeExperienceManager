@@ -2,11 +2,11 @@ using Blackbird.Applications.Sdk.Common;
 
 namespace Apps.AEM.Models.Responses;
 
-public class SearchPagesResponse(List<PageResponse> pages)
+public class SearchPagesResponse(IEnumerable<PageResponse> pages)
 {
     [Display("Content")]
-    public List<PageResponse> Pages { get; set; } = pages;
+    public IEnumerable<PageResponse> Pages { get; set; } = pages;
 
     [Display("Total count")]
-    public double TotalCount { get; set; } = pages.Count;
+    public double TotalCount { get; set; } = pages.Count();
 }
