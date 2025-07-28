@@ -8,19 +8,13 @@ public class TagNodeDtoConverter : JsonConverter
 {
     public override bool CanConvert(System.Type objectType) => objectType == typeof(TagNodeDto);
 
-    private static readonly HashSet<string> TagNodeDtoSkipProperties = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "jcr:title", "jcr:description", "jcr:primaryType", "sling:resourceType",
-        "jcr:createdBy", "jcr:created"
-    };
-
     public override object ReadJson(JsonReader reader, System.Type objectType, object? existingValue, JsonSerializer serializer)
     {
         var jo = JObject.Load(reader);
         var tagNode = new TagNodeDto();
         serializer.Populate(jo.CreateReader(), tagNode);
 
-        tagNode.Tags = JsonSerializationConvertHelper.ExtractChildTags(jo, serializer, TagNodeDtoSkipProperties);
+        tagNode.Tags = JsonSerializationConvertHelper.ExtractChildTags(jo, serializer);
         return tagNode;
     }
 

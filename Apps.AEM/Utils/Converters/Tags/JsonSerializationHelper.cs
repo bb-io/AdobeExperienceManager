@@ -6,34 +6,30 @@ namespace Apps.AEM.Utils.Converters.Tags;
 
 public static class JsonSerializationConvertHelper
 {
-    public static List<TagNodeDto> ExtractChildTags(JObject jo, JsonSerializer serializer, HashSet<string> skipProperties)
+    public static List<TagNodeDto> ExtractChildTags(JObject jo, JsonSerializer serializer)
     {
         var children = new List<TagNodeDto>();
 
         foreach (var prop in jo.Properties())
         {
-            // Skip system properties
-            if (skipProperties.Contains(prop.Name))
-                continue;
-
             if (prop.Value.Type != JTokenType.Object)
             {
                 continue;
             }
 
-            var childObj = (JObject)prop.Value;
-            if (childObj == null)
+            var tagJObject = (JObject)prop.Value;
+            if (tagJObject == null)
             {
                 continue;
             }
 
-            var primaryType = childObj["jcr:primaryType"]?.ToString();
+            var primaryType = tagJObject["jcr:primaryType"]?.ToString();
             if (primaryType != "cq:Tag")
             {
                 continue;
             }
 
-            var childTag = childObj.ToObject<TagNodeDto>(serializer);
+            var childTag = tagJObject.ToObject<TagNodeDto>(serializer);
             if (childTag == null)
             {
                 continue;

@@ -8,19 +8,13 @@ public class TagsApiPayloadDtoConverter : JsonConverter
 {
     public override bool CanConvert(System.Type objectType) => objectType == typeof(TagsApiPayloadDto);
 
-    private static readonly HashSet<string> TagsApiPayloadDtoSkipProperties = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "jcr:createdBy", "jcr:mixinTypes", "sling:target", "sling:resourceType",
-        "jcr:title", "jcr:primaryType", "jcr:created", "hidden", "languages"
-    };
-
     public override object ReadJson(JsonReader reader, System.Type objectType, object? existingValue, JsonSerializer serializer)
     {
         var jo = JObject.Load(reader);
         var payload = new TagsApiPayloadDto();
         serializer.Populate(jo.CreateReader(), payload);
 
-        payload.Tags = JsonSerializationConvertHelper.ExtractChildTags(jo, serializer, TagsApiPayloadDtoSkipProperties);
+        payload.Tags = JsonSerializationConvertHelper.ExtractChildTags(jo, serializer);
         return payload;
     }
 
