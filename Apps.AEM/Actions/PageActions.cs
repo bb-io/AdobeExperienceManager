@@ -145,20 +145,20 @@ public class PageActions(InvocationContext invocationContext, IFileManagementCli
             request.AddQueryParameter("rootPath", searchCriteria.RootPath);
         }
 
-        bool hasStartDate = searchCriteria.CreatedAfter.HasValue || searchCriteria.ModifiedAfter.HasValue;
-        bool hasEndDate = searchCriteria.CreatedBefore.HasValue || searchCriteria.ModifiedBefore.HasValue;
+        bool hasCreatedDateFilter = searchCriteria.CreatedAfter.HasValue || searchCriteria.CreatedBefore.HasValue;
+        bool hasModifiedDateFilter = searchCriteria.ModifiedAfter.HasValue || searchCriteria.ModifiedBefore.HasValue;
 
-        if (hasStartDate && hasEndDate)
+        if (hasCreatedDateFilter && hasModifiedDateFilter)
         {
             throw new PluginMisconfigurationException("You can only set created date or modified date, not both.");
         }
 
-        if (hasEndDate)
+        if (hasModifiedDateFilter)
         {
             request.AddQueryParameter("events", "modified");
         }
 
-        if (hasStartDate)
+        if (hasCreatedDateFilter)
         {
             request.AddQueryParameter("events", "created");
         }
