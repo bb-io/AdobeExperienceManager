@@ -1,6 +1,7 @@
 using Apps.AEM.Models.Entities;
 using Apps.AEM.Models.Requests;
 using Apps.AEM.Models.Responses;
+using Apps.AEM.Utils;
 using Apps.AEM.Utils.Converters;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
@@ -18,8 +19,19 @@ public class PageActions(InvocationContext invocationContext, IFileManagementCli
     [Action("Search content", Description = "Search for content based on provided criteria.")]
     public async Task<SearchPagesResponse> SearchPagesAsync([ActionParameter] SearchPagesRequest searchPagesRequest)
     {
-        var searchRequest = BuildPageSearchRequest(searchPagesRequest);
+        var searchRequest = ContentSearch.BuildRequest(new()
+        {
+            RootPath = searchPagesRequest.RootPath,
+            StartDate = searchPagesRequest.StartDate ?? DateTime.UtcNow.AddDays(-31),
+            EndDate = searchPagesRequest.EndDate ?? DateTime.UtcNow,
+            Tags = searchPagesRequest.Tags,
+            Keyword = searchPagesRequest.Keyword,
+            ContentType = searchPagesRequest.ContentType,
+            Events = searchPagesRequest.Events,
+        });
+
         var pageResults = await Client.Paginate<PageResponse>(searchRequest);
+
         return new(pageResults);
     }
 
@@ -134,56 +146,6 @@ public class PageActions(InvocationContext invocationContext, IFileManagementCli
                 reference.ReferencePath = ModifyPath(reference.ReferencePath, sourceLanguage, targetLanguage);
             }
         }
-    }
-
-    private RestRequest BuildPageSearchRequest(SearchPagesRequest searchCriteria)
-    {
-        var request = new RestRequest("/content/services/bb-aem-connector/pages/events.json");
-
-        if (searchCriteria.RootPath != null)
-        {
-            request.AddQueryParameter("rootPath", searchCriteria.RootPath);
-        }
-
-        bool hasCreatedDateFilter = searchCriteria.CreatedAfter.HasValue || searchCriteria.CreatedBefore.HasValue;
-        bool hasModifiedDateFilter = searchCriteria.ModifiedAfter.HasValue || searchCriteria.ModifiedBefore.HasValue;
-
-        if (hasCreatedDateFilter && hasModifiedDateFilter)
-        {
-            throw new PluginMisconfigurationException("You can only set created date or modified date, not both.");
-        }
-
-        if (hasModifiedDateFilter)
-        {
-            request.AddQueryParameter("events", "modified");
-        }
-
-        if (hasCreatedDateFilter)
-        {
-            request.AddQueryParameter("events", "created");
-        }
-
-        if (searchCriteria.CreatedAfter.HasValue)
-        {
-            request.AddQueryParameter("startDate", searchCriteria.CreatedAfter.Value.ToString("yyyy-MM-ddTHH:mm:ssZ"));
-        }
-
-        if (searchCriteria.CreatedBefore.HasValue)
-        {
-            request.AddQueryParameter("endDate", searchCriteria.CreatedBefore.Value.ToString("yyyy-MM-ddTHH:mm:ssZ"));
-        }
-
-        if (searchCriteria.ModifiedAfter.HasValue)
-        {
-            request.AddQueryParameter("startDate", searchCriteria.ModifiedAfter.Value.ToString("yyyy-MM-ddTHH:mm:ssZ"));
-        }
-
-        if (searchCriteria.ModifiedBefore.HasValue)
-        {
-            request.AddQueryParameter("endDate", searchCriteria.ModifiedBefore.Value.ToString("yyyy-MM-ddTHH:mm:ssZ"));
-        }
-
-        return request;
     }
 
     private async Task<List<ReferenceEntity>> GetReferenceEntitiesAsync(string content)
