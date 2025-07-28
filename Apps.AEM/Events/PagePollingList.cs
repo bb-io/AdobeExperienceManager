@@ -56,7 +56,7 @@ public class PagePollingList(InvocationContext invocationContext) : Invocable(in
     [PollingEvent("On tag added", Description = "Periodically checks for new content with any of the specified tags. If there is any content found, the event is triggered.")]
     public async Task<PollingEventResponse<TagsMemory, SearchPagesResponse>> OnTagAddedAsync(
         PollingEventRequest<TagsMemory> request,
-        [PollingEventParameter] OnPagesCreatedOrUpdatedRequest optionalRequests)
+        [PollingEventParameter] OnTagsAddedRequest optionalRequests)
     {
         if (request.Memory is null)
         {
