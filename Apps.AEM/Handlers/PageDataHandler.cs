@@ -1,3 +1,4 @@
+using Apps.AEM.Constants;
 using Apps.AEM.Models.Responses;
 using Blackbird.Applications.Sdk.Common.Dynamic;
 using Blackbird.Applications.Sdk.Common.Invocation;
@@ -10,8 +11,17 @@ public class PageDataHandler(InvocationContext invocationContext) : Invocable(in
     public async Task<IEnumerable<DataSourceItem>> GetDataAsync(DataSourceContext context, CancellationToken cancellationToken)
     {
         var request = new RestRequest("/content/services/bb-aem-connector/pages/events.json");
-        var pages = await Client.Paginate<PageResponse>(request);
-        return pages.Where(x => context.SearchString == null || x.Title.Contains(context.SearchString, StringComparison.OrdinalIgnoreCase))
+        request.AddParameter("type", ContentTypes.Page);
+
+        if (!string.IsNullOrEmpty(context.SearchString))
+        {
+            request.AddQueryParameter("keyword", context.SearchString);
+        }
+
+        var pages = await Client.Paginate<PageResponse>(request, 100);
+
+        return pages
+            .Where(x => context.SearchString == null || x.Title.Contains(context.SearchString, StringComparison.OrdinalIgnoreCase))
             .Select(x => new DataSourceItem(x.Path, x.Title));
     }
 }

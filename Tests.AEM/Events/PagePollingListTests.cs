@@ -69,4 +69,55 @@ public class PagePollingListTests : TestBase
         // The FlyBird value will depend on whether any pages were created/updated during the test
         Console.WriteLine($"FlyBird: {secondResponse.FlyBird}");
     }
+
+    [TestMethod]
+    public async Task OnTagAddedAsync_WithNullMemory_ShouldReturnCorrectResponse()
+    {
+        // Arrange
+        var request = new PollingEventRequest<TagsMemory>
+        {
+            Memory = null,
+            PollingTime = DateTime.UtcNow
+        };
+        var optionalRequest = new OnTagsAddedRequest();
+
+        // Act
+        var response = await _pollingList.OnTagAddedAsync(request, optionalRequest);
+
+        // Assert
+        Assert.IsFalse(response.FlyBird, "FlyBird should be false for first run with null memory");
+        Assert.IsNotNull(response.Memory);
+        Assert.IsNull(response.Result);
+    }
+
+    [TestMethod]
+    public async Task OnTagAddedAsync_WithInitialMemory_ShouldWork()
+    {
+        // Arrange
+        var testRunTime = DateTime.UtcNow;
+        var request = new PollingEventRequest<TagsMemory>
+        {
+            Memory = new()
+            {
+                LastTriggeredTime = testRunTime.AddDays(-10),
+                PagesWithTagsObserved = new HashSet<string>() // { "/content/test-site/en/Homepage" }
+            },
+            PollingTime = testRunTime
+        };
+        var optionalRequest = new OnTagsAddedRequest()
+        {
+            Tags = ["workflow:wcm/ready-for-translation"],
+            RootPath = "/content/test-site/en/",
+        };
+
+        // Act
+        var response = await _pollingList.OnTagAddedAsync(request, optionalRequest);
+
+        // Assert
+        Console.WriteLine($"Response: {JsonConvert.SerializeObject(response.Result, Formatting.Indented)}");
+
+        Assert.IsTrue(response.FlyBird);
+        Assert.IsNotNull(response.Memory);
+        Assert.IsNotNull(response.Result);
+    }
 }

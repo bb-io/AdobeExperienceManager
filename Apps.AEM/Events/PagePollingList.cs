@@ -1,8 +1,10 @@
 using Apps.AEM.Events.Models;
+using Apps.AEM.Handlers;
 using Apps.AEM.Models.Responses;
+using Apps.AEM.Utils;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.Sdk.Common.Polling;
-using RestSharp;
+using System;
 
 namespace Apps.AEM.Events;
 
@@ -10,7 +12,8 @@ namespace Apps.AEM.Events;
 public class PagePollingList(InvocationContext invocationContext) : Invocable(invocationContext)
 {
     [PollingEvent("On content created or updated", Description = "Polling event that periodically checks for new or updated content. If the any content are found, the event is triggered.")]
-    public async Task<PollingEventResponse<PagesMemory, SearchPagesResponse>> OnPagesCreatedOrUpdatedAsync(PollingEventRequest<PagesMemory> request,
+    public async Task<PollingEventResponse<PagesMemory, SearchPagesResponse>> OnPagesCreatedOrUpdatedAsync(
+        PollingEventRequest<PagesMemory> request,
         [PollingEventParameter] OnPagesCreatedOrUpdatedRequest optionalRequests)
     {
         if (request.Memory is null)
@@ -19,51 +22,91 @@ public class PagePollingList(InvocationContext invocationContext) : Invocable(in
             {
                 FlyBird = false,
                 Result = null,
-                Memory = new PagesMemory
-                {
-                    LastTriggeredTime = DateTime.UtcNow
-                }
+                Memory = new PagesMemory { LastTriggeredTime = DateTime.UtcNow }
             };
         }
 
-        var parameters = new List<KeyValuePair<string, string>>
+        var triggerTime = DateTime.UtcNow;
+        var searchRequest = ContentSearch.BuildRequest(new()
         {
-            new("startDate", request.Memory.LastTriggeredTime.ToString("yyyy-MM-ddTHH:mm:ssZ")),
-            new("endDate", DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ")),
-            new("events", "created"),
-            new("events", "modified")
-        };
+            RootPath = optionalRequests.RootPath,
+            StartDate = request.Memory.LastTriggeredTime,
+            EndDate = triggerTime,
+            Tags = optionalRequests.Tags,
+            Keyword = optionalRequests.Keyword,
+            ContentType = optionalRequests.ContentType,
+            Events = optionalRequests.Events,
+        });
 
-        if (optionalRequests.RootPath != null)
-        {
-            parameters.Add(new("rootPath", optionalRequests.RootPath));
-        }
+        var createdAndUpdatedPages = await Client.Paginate<PageResponse>(searchRequest);
 
-        var createdAndUpdatedPages = await GetPagesAsync(parameters);
         if (optionalRequests.RootPathIncludes != null && optionalRequests.RootPathIncludes.Any())
         {
-            createdAndUpdatedPages = createdAndUpdatedPages.Where(page => optionalRequests.RootPathIncludes.Any(include => page.Path.Contains(include))).ToList();
+            createdAndUpdatedPages = createdAndUpdatedPages
+                .Where(page => optionalRequests.RootPathIncludes.Any(include => page.Path.Contains(include)))
+                .ToList();
         }
 
         return new()
         {
             FlyBird = createdAndUpdatedPages.Count > 0,
             Result = new(createdAndUpdatedPages),
-            Memory = new PagesMemory
-            {
-                LastTriggeredTime = DateTime.UtcNow
-            }
+            Memory = new PagesMemory { LastTriggeredTime = triggerTime }
         };
     }
 
-    private async Task<List<PageResponse>> GetPagesAsync(List<KeyValuePair<string, string>> queryParams)
+    [PollingEvent("On tag added", Description = "Periodically checks for new content with any of the specified tags. If there is any content found, the event is triggered.")]
+    public async Task<PollingEventResponse<TagsMemory, SearchPagesResponse>> OnTagAddedAsync(
+        PollingEventRequest<TagsMemory> request,
+        [PollingEventParameter] OnTagsAddedRequest input)
     {
-        var request = new RestRequest("/content/services/bb-aem-connector/pages/events.json");
-        foreach (var param in queryParams)
+        var triggerTime = DateTime.UtcNow;
+        var lastTriggeredTime = request.Memory?.LastTriggeredTime ?? triggerTime.AddDays(-365);
+
+        var searchRequest = ContentSearch.BuildRequest(new()
         {
-            request.AddQueryParameter(param.Key, param.Value);
+            RootPath = input.RootPath,
+            StartDate = lastTriggeredTime,
+            EndDate = triggerTime,
+            Tags = input.Tags,
+            Keyword = input.Keyword,
+            ContentType = input.ContentType,
+            Events = new EventsDataHandler().GetData().Select(x => x.Value),
+        });
+
+        IEnumerable<PageResponse> pagesFound = await Client.Paginate<PageResponse>(searchRequest);
+
+        if (input.RootPathIncludes?.Any() == true)
+        {
+            pagesFound = pagesFound
+                .Where(page => input.RootPathIncludes.Any(include => page.Path.Contains(include)));
         }
 
-        return await Client.Paginate<PageResponse>(request);
+        var previoslyObservedPages = request.Memory?.PagesWithTagsObserved ?? new HashSet<string>();
+        var recentlyChangedPages = pagesFound.Select(page => page.Path).ToHashSet();
+
+        var newPagesWithTags = recentlyChangedPages.Except(previoslyObservedPages);
+
+        var response = new PollingEventResponse<TagsMemory, SearchPagesResponse>
+        {
+            Memory = new TagsMemory
+            {
+                LastTriggeredTime = triggerTime,
+                PagesWithTagsObserved = previoslyObservedPages.Union(newPagesWithTags).ToHashSet(),
+            }
+        };
+
+        if (request.Memory == null)
+        {
+            response.FlyBird = false;
+            response.Result = null;
+        }
+        else
+        {
+            response.FlyBird = newPagesWithTags.Any();
+            response.Result = new SearchPagesResponse(pagesFound.Where(x => newPagesWithTags.Contains(x.Path)));
+        }
+
+        return response;
     }
 }

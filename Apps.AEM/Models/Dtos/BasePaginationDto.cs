@@ -19,5 +19,5 @@ public class BasePaginationDto<T>
     [DefinitionIgnore]
     public int Results { get; set; } = 0;
 
-    public virtual List<T> Pages { get; set; } = new();
+    public virtual List<T> Content { get; set; } = [];
 }

@@ -6,15 +6,14 @@
         <Nullable>enable</Nullable>
         <Product>AEM Cloud [Beta]</Product>
         <Description>AEM (Adobe Experience Manager) is a Content Management System (CMS) that allows users and companies to easily build websites, apps, and manage web pages and content. AEM is used by developers and marketers to organize and distribute content across digital channels.</Description>
-        <Version>1.0.3</Version>
+        <Version>1.1.0</Version>
         <PackageId>Apps.AEM</PackageId>
         <AssemblyName>Apps.AEM</AssemblyName>
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Blackbird.Applications.Sdk.Common" Version="2.12.0" />
-        <PackageReference Include="Blackbird.Applications.Sdk.Utils" Version="1.0.25" />
-        <PackageReference Include="HtmlAgilityPack" Version="1.6.13" />
+        <PackageReference Include="Blackbird.Applications.SDK.Blueprints" Version="1.0.0" />
+        <PackageReference Include="Blackbird.Applications.Sdk.Utils" Version="1.0.26" />
         <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.9.0" />
     </ItemGroup>
 
