@@ -15,7 +15,7 @@ public static class ContentSearch
 
         // Dates
         request.AddQueryParameter("startDate", searchParams.StartDate.ToString(SearchDateFormat));
-        request.AddQueryParameter("endDate", searchParams.StartDate.ToString(SearchDateFormat));
+        request.AddQueryParameter("endDate", searchParams.EndDate.ToString(SearchDateFormat));
 
         // Root path filter
         if (searchParams.RootPath != null)

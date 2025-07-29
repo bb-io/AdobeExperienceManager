@@ -26,6 +26,7 @@ public class TagDataHandler(InvocationContext invocationContext) : Invocable(inv
             : tags.Where(x => x.DisplayName.Contains(context.SearchString, StringComparison.OrdinalIgnoreCase));
     }
 
+    // See more info about tags: https://developer.adobe.com/experience-manager/reference-materials/6-5/javadoc/com/day/cq/tagging/Tag.html
     private static List<DataSourceItem> BuildTagDictionaryRecursive(
         TagNodeDto tag,
         string parentPath,
@@ -33,7 +34,7 @@ public class TagDataHandler(InvocationContext invocationContext) : Invocable(inv
         int level)
     {
         var currentPath = string.IsNullOrEmpty(parentPath)
-            ? tag.TagId + ":" // Root level always ends with ":", even if that's the selected tag itself
+            ? tag.TagId + ":" // Namespace (root level) always ends with ":", even if that's the selected tag itself
             : level == 1 
                 ? $"{parentPath}{tag.TagId}"  // First level will reuse root's colon
                 : $"{parentPath}/{tag.TagId}"; // Subsequent levels use "/"

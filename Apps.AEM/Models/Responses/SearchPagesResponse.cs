@@ -8,5 +8,5 @@ public class SearchPagesResponse(IEnumerable<PageResponse> pages)
     public IEnumerable<PageResponse> Pages { get; set; } = pages;
 
     [Display("Total count")]
-    public double TotalCount { get; set; } = pages.Count();
+    public int TotalCount { get; set; } = pages.Count();
 }

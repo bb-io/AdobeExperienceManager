@@ -23,8 +23,4 @@ public class OnTagsAddedRequest
     [Display("Content type", Description = "Type of content to search for, defaults to 'page'.")]
     [StaticDataSource(typeof(ContentTypesDataHandler))]
     public string? ContentType { get; set; }
-
-    [Display("Events (all by default)")]
-    [StaticDataSource(typeof(EventsDataHandler))]
-    public IEnumerable<string>? Events { get; set; }
 }

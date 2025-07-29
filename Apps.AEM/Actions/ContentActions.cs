@@ -19,11 +19,12 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
     [Action("Search content", Description = "Search for content based on provided criteria.")]
     public async Task<SearchPagesResponse> SearchPagesAsync([ActionParameter] SearchPagesRequest searchPagesRequest)
     {
+        var actionTime = DateTime.UtcNow;
         var searchRequest = ContentSearch.BuildRequest(new()
         {
             RootPath = searchPagesRequest.RootPath,
-            StartDate = searchPagesRequest.StartDate ?? DateTime.UtcNow.AddDays(-31),
-            EndDate = searchPagesRequest.EndDate ?? DateTime.UtcNow,
+            StartDate = searchPagesRequest.StartDate ?? actionTime.AddDays(-31),
+            EndDate = searchPagesRequest.EndDate ?? actionTime,
             Tags = searchPagesRequest.Tags,
             Keyword = searchPagesRequest.Keyword,
             ContentType = searchPagesRequest.ContentType,
