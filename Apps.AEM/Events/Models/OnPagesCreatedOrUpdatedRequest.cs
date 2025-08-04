@@ -8,10 +8,10 @@ namespace Apps.AEM.Events.Models;
 public class OnPagesCreatedOrUpdatedRequest
 {
     [Display("Root path")]
-    public string? RootPath { get; set; }
+    public string? ContentId { get; set; }
 
     [Display("Root path includes")]
-    public IEnumerable<string>? RootPathIncludes { get; set; }
+    public IEnumerable<string>? ContentIdIncludes { get; set; }
 
     [Display("Tags", Description = "Find pages that have at least one of the listed tags.")]
     [DataSource(typeof(TagDataHandler))]

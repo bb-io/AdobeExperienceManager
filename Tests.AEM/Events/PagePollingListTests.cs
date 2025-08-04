@@ -1,6 +1,5 @@
 using Apps.AEM.Events;
 using Apps.AEM.Events.Models;
-using Apps.AEM.Models.Responses;
 using Blackbird.Applications.Sdk.Common.Polling;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json;
@@ -11,13 +10,7 @@ namespace Tests.AEM.Events;
 [TestClass]
 public class PagePollingListTests : TestBase
 {
-    private PagePollingList _pollingList;
-
-    [TestInitialize]
-    public void Initialize()
-    {
-        _pollingList = new PagePollingList(InvocationContext);
-    }
+    private PagePollingList _pollingList => new PagePollingList(InvocationContext);
 
     [TestMethod]
     public async Task OnPagesCreatedOrUpdatedAsync_WithNullMemory_ShouldReturnCorrectResponse()

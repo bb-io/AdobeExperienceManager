@@ -4,7 +4,7 @@ using HtmlAgilityPack;
 using Newtonsoft.Json.Linq;
 using System.Web;
 
-namespace Apps.AEM.Utils.Converters;
+namespace Apps.AEM.Utils.Converters.InteroperableContent;
 
 public static class HtmlToJsonConverter
 {
@@ -47,7 +47,7 @@ public static class HtmlToJsonConverter
 
         foreach (var div in contentDivs)
         {
-            var originalJsonEncoded = div.GetAttributeValue("data-original-json", null);
+            var originalJsonEncoded = div.GetAttributeValue("data-original-json", string.Empty);
             if (string.IsNullOrEmpty(originalJsonEncoded))
             {
                 continue;
@@ -61,9 +61,17 @@ public static class HtmlToJsonConverter
             
             // Process div based on its type (root or reference)
             var isRoot = div.GetAttributeValue("data-root", "").ToLower() == "true";
-            var referencePath = div.GetAttributeValue("data-reference-path", null);
-            var sourcePath = div.GetAttributeValue("data-source-path", null);
-            
+            var referencePath = div.GetAttributeValue("data-reference-path", string.Empty);
+            var sourcePath = div.GetAttributeValue("data-source-path", string.Empty);
+
+            var contentPath = isRoot ? sourcePath : referencePath;
+
+            // If can't determine content path, skip
+            if (string.IsNullOrEmpty(contentPath))
+            {
+                continue;
+            }
+
             // If neither root nor reference, skip
             if (!isRoot && string.IsNullOrEmpty(referencePath))
             {
@@ -76,7 +84,7 @@ public static class HtmlToJsonConverter
             {
                 foreach (var element in elementsWithPath)
                 {
-                    var jsonPath = element.GetAttributeValue("data-json-path", null);
+                    var jsonPath = element.GetAttributeValue("data-json-path", string.Empty);
                     if (string.IsNullOrEmpty(jsonPath))
                     {
                         continue;
@@ -104,7 +112,7 @@ public static class HtmlToJsonConverter
 
             // Add to result as root or reference content entity
             resultEntities.Add(new JsonContentEntity(
-                sourcePath: isRoot ? sourcePath : referencePath,
+                sourcePath: contentPath,
                 targetContent: jsonObj,
                 references: references,
                 referenceContent: !isRoot

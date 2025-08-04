@@ -1,5 +1,5 @@
 using Apps.AEM.Models.Entities;
-using Apps.AEM.Utils.Converters;
+using Apps.AEM.Utils.Converters.InteroperableContent;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json;
 using System.Text;
