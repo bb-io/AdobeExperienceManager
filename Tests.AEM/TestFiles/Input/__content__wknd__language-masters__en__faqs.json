@@ -1,0 +1,470 @@
+{
+  "rootContentPath": "/content/wknd/language-masters/en/faqs",
+  "isIncludeReferencesEnabled": true,
+  "rootContent": {
+    "jcr:content": {
+      "jcr:title": "FAQs",
+      "jcr:description": "Here we answer some of the questions that we hear most often from the community.",
+      "root": {
+        "container": {
+          "container": {
+            "cq:responsive": {
+              "default": {
+              },
+              "tablet": {
+              },
+              "phone": {
+              }
+            },
+            "title": {
+              "cq:responsive": {
+                "phone": {
+                }
+              }
+            },
+            "image": {
+              "cq:responsive": {
+                "default": {
+                }
+              }
+            },
+            "text": {
+              "text": "<p>WKND is a collective of outdoors, music, crafts, adventure sports, and travel enthusiasts that want to share our experiences, connections, and expertise with the world. Our objective is create a community to help like-minded adventure seekers find fun, engaging, and responsible ways to to enjoy life and create lasting memories.</p>\n",
+              "cq:responsive": {
+                "phone": {
+                },
+                "default": {
+                }
+              }
+            },
+            "accordion": {
+              "cq:responsive": {
+                "phone": {
+                }
+              },
+              "item_1571070731882": {
+                "cq:panelTitle": "Who is WKND's intended audience?",
+                "text": {
+                  "text": "<p>We believe the best adventures and activities are those that are accessible to everyone. WKND is designed to be inclusive of all age ranges, abilities, and budget-levels. We strive to cater to the thrill-seeking adrenaline junkie BASE-jumpers as well as novices that have a spare weekend and interest in trying something new.&nbsp; &nbsp;&nbsp;</p>\n"
+                }
+              },
+              "item_1": {
+                "jcr:title": "Item 1",
+                "cq:panelTitle": "How does WKND pay for itself?",
+                "text": {
+                  "text": "<p>WKND charges a small fee for local promoters that want to sponsor their adventures and events on the WKND site.&nbsp; Sponsored Adventures may get sorted to more prominent positions in our Adventures listings pages.</p>\n<h3>&nbsp;</h3>\n"
+                }
+              },
+              "item_2": {
+                "jcr:title": "Item 2",
+                "cq:panelTitle": "Can I contribute to WKND?",
+                "text": {
+                  "text": "<p>Yes!&nbsp; If you have the expertise and&nbsp;experiences&nbsp;to share, we’ll provide the platform to spread it.&nbsp; As a Guest Writer, you will play an integral role in helping people find fun and cool things to do in your community.</p>\n"
+                }
+              },
+              "item_1571070705187": {
+                "cq:panelTitle": "How often is WKDN updated?",
+                "text": {
+                  "text": "<p>WKND is updated daily to provide you with the latest in-depth articles on fun activities that we’ve recently exploring and new adventures that are available for you to discover.&nbsp; Come back often to see the latest or subscribe to our social feeds.</p>\n"
+                }
+              },
+              "item_1571070718887": {
+                "cq:panelTitle": "When was WKND founded?",
+                "text": {
+                  "text": "<p>WKND was created in 2015 when our founders, Daniel and Kilian, realized that their friends and family were constantly using them as resources to find fun things to do while they were in Los Angeles. They loved sharing ideas about fun events and activities they knew of, but wanted to be able to do it at larger scale across communities.&nbsp; They decided to start WKND as a way to share their insights and experiences with as many people as possible.&nbsp; &nbsp;&nbsp;</p>\n"
+                }
+              },
+              "item_1572027287775": {
+                "cq:panelTitle": "Is a hot dog a sandwich?",
+                "text": {
+                  "text": "<p>While it may be described as meat between two pieces of bread, a hot dog is just a sandwich in the same way Michael Jordan was just a basketball player or William Shakespeare was just a playwright.&nbsp; Technically true, but vastly understated.</p>\n"
+                }
+              },
+              "item_1572027298182": {
+                "cq:panelTitle": "Is WKND a real company?",
+                "text": {
+                  "text": "<p>No. The WKND is a fictional online magazine and adventure company that focuses on outdoor activities and trips across the globe. The WKND site is designed to demonstrate functionality for Adobe Experience Manager. There is also a corresponding tutorial that walks a developer through the development.&nbsp; Special thanks to&nbsp;<b>Lorenzo Buosi&nbsp;</b>and<b>&nbsp;Kilian Amendola&nbsp;</b>who&nbsp;created the beautiful design for the WKND site.</p>\n",
+                  "cq:responsive": {
+                    "default": {
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "container_293505757": {
+            "cq:responsive": {
+              "default": {
+              },
+              "tablet": {
+              },
+              "phone": {
+              }
+            },
+            "separator": {
+            },
+            "title": {
+              "jcr:title": "Need more help?",
+              "cq:responsive": {
+                "phone": {
+                }
+              }
+            },
+            "text": {
+              "text": "<p style=\"text-align: left;\">Give us a call at <a href=\"#\">1-800-800-0000</a>.<br>\r\nE-mail us at info<a href=\"#\">@wknd.com</a><br>\r\nWe love to talk adventures!</p>\r\n",
+              "cq:responsive": {
+                "phone": {
+                }
+              }
+            }
+          }
+        }
+      },
+      "cq:featuredimage": {
+      }
+    },
+    "references": [
+      {
+        "propertyName": "fileReference",
+        "propertyPath": "jcr:content/root/container/container/image",
+        "referencePath": "/content/dam/wknd-shared/en/adventures/climbing-new-zealand/adobestock-277768563.jpeg"
+      },
+      {
+        "referencePath": "/content/experience-fragments/wknd/language-masters/en/site/header/master"
+      },
+      {
+        "referencePath": "/content/experience-fragments/wknd/language-masters/en/site/footer/master"
+      }
+    ]
+  },
+  "referencedContent": [
+    {
+      "referencePath": "/content/dam/wknd-shared/en/adventures/climbing-new-zealand/adobestock-277768563.jpeg",
+      "propertyName": "fileReference",
+      "propertyPath": "jcr:content/root/container/container/image",
+      "content": {
+        "jcr:content": {
+          "metadata": {
+            "xmpRights:UsageTerms": [
+              "Thank you for your interest in Adobe’s products and services! The images in this demo website are from Adobe Stock and are Third Party Material as  defined in the Demo Asset Additional Terms   at https://www.adobe.com/legal/terms.html.  "
+            ],
+            "dc:title": "Woman with hands apart against mountain valley",
+            "dc:subject": [
+              "woman",
+              "mountain",
+              "freedom",
+              "peak",
+              "hands apart",
+              "travel",
+              "trekking",
+              "sky",
+              "adventure",
+              "nature",
+              "landscape",
+              "posture",
+              "explore",
+              "happy",
+              "rock",
+              "tourist",
+              "view",
+              "hat",
+              "activity",
+              "peace",
+              "vacation",
+              "height",
+              "altitude",
+              "achievement",
+              "coat",
+              "top",
+              "climb",
+              "hike",
+              "journey",
+              "tourism",
+              "destination",
+              "valley",
+              "gesture",
+              "standing",
+              "back view",
+              "copy space",
+              "anonymous",
+              "unrecognizable",
+              "blurred background",
+              "horizontal",
+              "new zealand",
+              "rosy peak",
+              "fm",
+              "woman",
+              "mountain",
+              "freedom",
+              "peak",
+              "hands apart",
+              "travel",
+              "trekking",
+              "sky",
+              "adventure",
+              "nature",
+              "landscape",
+              "posture",
+              "explore",
+              "happy",
+              "rock",
+              "tourist",
+              "view",
+              "hat",
+              "activity",
+              "peace",
+              "vacation",
+              "height",
+              "altitude",
+              "achievement",
+              "coat",
+              "top",
+              "climb",
+              "hike",
+              "journey",
+              "tourism",
+              "destination",
+              "valley",
+              "gesture",
+              "standing",
+              "back view",
+              "copy space",
+              "anonymous",
+              "unrecognizable",
+              "blurred background",
+              "horizontal",
+              "new zealand",
+              "rosy peak",
+              "fm",
+              "woman",
+              "mountain",
+              "freedom",
+              "peak",
+              "hands apart",
+              "travel",
+              "trekking",
+              "sky",
+              "adventure",
+              "nature",
+              "landscape",
+              "posture",
+              "explore",
+              "happy",
+              "rock",
+              "tourist",
+              "view",
+              "hat",
+              "activity",
+              "peace",
+              "vacation",
+              "height",
+              "altitude",
+              "achievement",
+              "coat",
+              "top",
+              "climb",
+              "hike",
+              "journey",
+              "tourism",
+              "destination",
+              "valley",
+              "gesture",
+              "standing",
+              "back view",
+              "copy space",
+              "anonymous",
+              "unrecognizable",
+              "blurred background",
+              "horizontal",
+              "new zealand",
+              "rosy peak",
+              "fm"
+            ],
+            "dc:description": "Back view of woman in hat and coat standing on high peak holding hands apart against majestic terrain with lake and mountains",
+            "jcr:title": "Woman with hands apart against mountain valley",
+            "dc:rights": "Fran Mares"
+          }
+        }
+      }
+    },
+    {
+      "referencePath": "/content/experience-fragments/wknd/language-masters/en/site/header/master",
+      "propertyName": null,
+      "propertyPath": null,
+      "content": {
+        "jcr:content": {
+          "jcr:title": "Header",
+          "root": {
+            "container": {
+              "container": {
+                "cq:responsive": {
+                },
+                "sign-in-buttons": {
+                  "signInLabel": "Sign In",
+                  "greetingLabel": "Welcome",
+                  "signOutLabel": "Sign Out",
+                  "cq:responsive": {
+                    "default": {
+                    },
+                    "phone": {
+                    },
+                    "tablet": {
+                    }
+                  }
+                },
+                "languagenavigation": {
+                  "cq:responsive": {
+                    "default": {
+                    },
+                    "phone": {
+                    },
+                    "tablet": {
+                    }
+                  }
+                }
+              },
+              "container_1195249223": {
+                "cq:responsive": {
+                },
+                "image": {
+                  "alt": "WKND Logo",
+                  "cq:responsive": {
+                    "default": {
+                    },
+                    "tablet": {
+                    },
+                    "phone": {
+                    }
+                  }
+                },
+                "navigation": {
+                  "cq:responsive": {
+                    "default": {
+                    },
+                    "tablet": {
+                    },
+                    "phone": {
+                    }
+                  }
+                },
+                "search": {
+                  "cq:responsive": {
+                    "default": {
+                    },
+                    "tablet": {
+                    },
+                    "phone": {
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "references": [
+          {
+            "propertyName": "fileReference",
+            "propertyPath": "jcr:content/root/container/container_1195249223/image",
+            "referencePath": "/content/dam/wknd/en/site/wknd-logo-dk.svg"
+          }
+        ]
+      }
+    },
+    {
+      "referencePath": "/content/dam/wknd/en/site/wknd-logo-dk.svg",
+      "propertyName": "fileReference",
+      "propertyPath": "jcr:content/root/container/container_1195249223/image",
+      "content": {
+      }
+    },
+    {
+      "referencePath": "/content/experience-fragments/wknd/language-masters/en/site/footer/master",
+      "propertyName": null,
+      "propertyPath": null,
+      "content": {
+        "jcr:content": {
+          "jcr:title": "Footer",
+          "root": {
+            "container": {
+              "container": {
+                "cq:responsive": {
+                },
+                "image": {
+                  "alt": "WKND Logo",
+                  "cq:responsive": {
+                    "default": {
+                    },
+                    "tablet": {
+                    },
+                    "phone": {
+                    }
+                  }
+                },
+                "navigation": {
+                  "cq:responsive": {
+                    "default": {
+                    },
+                    "tablet": {
+                    },
+                    "phone": {
+                    }
+                  }
+                },
+                "title": {
+                  "jcr:title": "Follow Us",
+                  "cq:responsive": {
+                    "default": {
+                    },
+                    "phone": {
+                    },
+                    "tablet": {
+                    }
+                  }
+                },
+                "button": {
+                  "jcr:title": "WKND Global Social Media",
+                  "button39381355678930": {
+                    "jcr:title": "Facebook"
+                  },
+                  "item39381356464486": {
+                    "jcr:title": "Twitter"
+                  },
+                  "item39381358237347": {
+                    "jcr:title": "Instagram"
+                  },
+                  "cq:responsive": {
+                    "default": {
+                    },
+                    "tablet": {
+                    },
+                    "phone": {
+                    }
+                  }
+                },
+                "separator": {
+                },
+                "text": {
+                  "text": "<p>Ⓒ 2019,&nbsp;&nbsp;WKND Site.</p>\n<p>WKND is a fictitious adventure and travel website created by Adobe to demonstrate how anyone can use Adobe Experience Manager to build a beautiful, feature-rich website over a single weekend. This site is built entirely with Adobe Experience Manager&nbsp;<a href=\"https://docs.adobe.com/content/help/en/experience-manager-core-components/using/introduction.html\">Core Components</a>&nbsp;and&nbsp;<a href=\"https://github.com/adobe/aem-project-archetype\">Archetype</a>&nbsp;that are available as open source code to the public. The entire&nbsp;<a href=\"https://github.com/adobe/aem-guides-wknd/\">site source code</a>&nbsp;is available as open source as well and is accompanied with a&nbsp;<a href=\"https://docs.adobe.com/content/help/en/experience-manager-learn/getting-started-wknd-tutorial-develop/overview.html\">detailed tutorial</a>&nbsp;on how to recreate the site.</p>\n<p>Many of the beautiful images in the WKND site are available for purchase via&nbsp;<a href=\"https://stock.adobe.com/\">Adobe Stock</a>.</p>\n"
+                }
+              }
+            }
+          }
+        },
+        "references": [
+          {
+            "propertyName": "fileReference",
+            "propertyPath": "jcr:content/root/container/container/image",
+            "referencePath": "/content/dam/wknd/en/site/wknd-logo-light.svg"
+          }
+        ]
+      }
+    },
+    {
+      "referencePath": "/content/dam/wknd/en/site/wknd-logo-light.svg",
+      "propertyName": "fileReference",
+      "propertyPath": "jcr:content/root/container/container/image",
+      "content": {
+      }
+    }
+  ]
+}

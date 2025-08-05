@@ -97,8 +97,7 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
     {
         if (!string.IsNullOrWhiteSpace(input.ContentId) && input.SkipUpdatingReferences != true)
         {
-            throw new PluginMisconfigurationException(
-                "'ContentId' can only be set with 'SkipUpdatingReferences' being set to true, as path overwrite only impacts a main (root) content.");
+            throw new PluginMisconfigurationException("'ContentId' can only be set with 'SkipUpdatingReferences' being set to true, as path overwrite only impacts a main (root) content.");
         }
 
         var fileStream = await fileManagementClient.DownloadAsync(input.Content);
@@ -106,15 +105,17 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
         await fileStream.CopyToAsync(memoryStream);
         memoryStream.Position = 0;
 
-        var htmlString = System.Text.Encoding.UTF8.GetString(memoryStream.ToArray());
+        var inputString = System.Text.Encoding.UTF8.GetString(memoryStream.ToArray());
 
-        if (Xliff2Serializer.IsXliff2(htmlString))
+        if (Xliff2Serializer.IsXliff2(inputString))
         {
-            htmlString = Transformation.Parse(htmlString, input.Content.Name).Target().Serialize()
+            inputString = Transformation.Parse(inputString, input.Content.Name).Target().Serialize()
                 ?? throw new PluginMisconfigurationException("XLIFF did not contain any files");
         }
 
-        var entities = HtmlToJsonConverter.ConvertToJson(htmlString);
+        var entities = OriginalJsonValidator.IsJson(inputString)
+            ? JsonToOriginalConverter.ConvertToEntities(inputString)
+            : HtmlToJsonConverter.ConvertToJson(inputString);
 
         var uploadResults = new List<UploadContentResponse>();
 

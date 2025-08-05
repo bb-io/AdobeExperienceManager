@@ -4,7 +4,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Apps.AEM.Utils.Converters.OriginalContent;
 
-public class OriginalToJsonConverter
+public static class OriginalToJsonConverter
 {
     public static string ConvertToJson(
         string rootContentJson,

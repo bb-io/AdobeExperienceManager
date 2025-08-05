@@ -115,4 +115,29 @@ public class ContentActionsTests : TestBase
         Assert.IsNotNull(response, "Response should not be null");
         System.Console.WriteLine(JsonConvert.SerializeObject(response, Formatting.Indented));
     }
+
+    [TestMethod]
+    public async Task UpdatePageFromOriginalJsonAsync_WithValidInput_ShouldSucceed()
+    {
+        // Arrange
+        var actions = new ContentActions(InvocationContext, FileManager);
+        var request = new UploadContentRequest
+        {
+            Content = new FileReference
+            {
+                Name = "__content__wknd__language-masters__en__faqs.json",
+                ContentType = "application/json"
+            },
+            SourceLocale = "/en",
+            Locale = "/fr",
+            IgnoreReferenceContentErrors = true
+        };
+
+        // Act
+        var response = await actions.UploadContent(request);
+
+        // Assert
+        Assert.IsNotNull(response, "Response should not be null");
+        System.Console.WriteLine(JsonConvert.SerializeObject(response, Formatting.Indented));
+    }
 }
