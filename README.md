@@ -44,6 +44,16 @@ Before connecting to AEM Cloud, ensure you have the following:
 
 ![connection](docs/images/connection.png)
 
+## Identifying content to translate
+
+Blackbird relies on a built-in AEM rules for determining which content to translate.
+
+You can find and configure these rules in AEM under **Tools > Operations > Translation Rules**.
+
+For more information on configuring translation rules, see the [official documentation](https://experienceleague.adobe.com/en/docs/experience-manager-cloud-service/content/sites/administering/reusing-content/translation/rules).
+
+![AEM translation rules](docs/images/aem_translation_rules.png)
+
 ## Actions
 
 - **Search content**: Search for content based on provided criteria.
