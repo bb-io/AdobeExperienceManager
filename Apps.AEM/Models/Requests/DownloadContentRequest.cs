@@ -9,7 +9,7 @@ namespace Apps.AEM.Models.Requests;
 
 public class DownloadContentRequest : IDownloadContentInput
 {
-    [Display("Page path", Description = "Page path to be used in the request.")]
+    [Display("Content path", Description = "Content path to be used in the request.")]
     [DataSource(typeof(PageDataHandler))]
     public string ContentId { get; set; } = string.Empty;
 

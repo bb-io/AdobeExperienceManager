@@ -9,13 +9,13 @@ using Blackbird.Applications.SDK.Blueprints;
 namespace Apps.AEM.Events;
 
 [PollingEventList]
-public class PagePollingList(InvocationContext invocationContext) : Invocable(invocationContext)
+public class ContentPollingList(InvocationContext invocationContext) : Invocable(invocationContext)
 {
     [PollingEvent("On content created or updated", Description = "Polling event that periodically checks for new or updated content. If the any content are found, the event is triggered.")]
     [BlueprintEventDefinition(BlueprintEvent.ContentCreatedOrUpdatedMultiple)]
-    public async Task<PollingEventResponse<PagesMemory, SearchContentResponse>> OnPagesCreatedOrUpdatedAsync(
-        PollingEventRequest<PagesMemory> request,
-        [PollingEventParameter] OnPagesCreatedOrUpdatedRequest optionalRequests)
+    public async Task<PollingEventResponse<ContentMemory, SearchContentResponse>> OnContentCreatedOrUpdated(
+        PollingEventRequest<ContentMemory> request,
+        [PollingEventParameter] OnContentCreatedOrUpdatedRequest optionalRequests)
     {
         if (request.Memory is null)
         {
@@ -23,7 +23,7 @@ public class PagePollingList(InvocationContext invocationContext) : Invocable(in
             {
                 FlyBird = false,
                 Result = null,
-                Memory = new PagesMemory { LastTriggeredTime = DateTime.UtcNow }
+                Memory = new ContentMemory { LastTriggeredTime = DateTime.UtcNow }
             };
         }
 
@@ -39,20 +39,20 @@ public class PagePollingList(InvocationContext invocationContext) : Invocable(in
             Events = optionalRequests.Events,
         });
 
-        var createdAndUpdatedPages = await Client.Paginate<ContentResponse>(searchRequest);
+        var createdAndUpdatedContent = await Client.Paginate<ContentResponse>(searchRequest);
 
         if (optionalRequests.ContentIdIncludes != null && optionalRequests.ContentIdIncludes.Any())
         {
-            createdAndUpdatedPages = createdAndUpdatedPages
-                .Where(page => optionalRequests.ContentIdIncludes.Any(include => page.ContentId.Contains(include)))
+            createdAndUpdatedContent = createdAndUpdatedContent
+                .Where(content => optionalRequests.ContentIdIncludes.Any(include => content.ContentId.Contains(include)))
                 .ToList();
         }
 
         return new()
         {
-            FlyBird = createdAndUpdatedPages.Count > 0,
-            Result = new(createdAndUpdatedPages),
-            Memory = new PagesMemory { LastTriggeredTime = triggerTime }
+            FlyBird = createdAndUpdatedContent.Count > 0,
+            Result = new(createdAndUpdatedContent),
+            Memory = new ContentMemory { LastTriggeredTime = triggerTime }
         };
     }
 
@@ -75,25 +75,25 @@ public class PagePollingList(InvocationContext invocationContext) : Invocable(in
             Events = new EventsDataHandler().GetData().Select(x => x.Value),
         });
 
-        IEnumerable<ContentResponse> pagesFound = await Client.Paginate<ContentResponse>(searchRequest);
+        IEnumerable<ContentResponse> contentFound = await Client.Paginate<ContentResponse>(searchRequest);
 
         if (input.RootPathIncludes?.Any() == true)
         {
-            pagesFound = pagesFound
-                .Where(page => input.RootPathIncludes.Any(include => page.ContentId.Contains(include)));
+            contentFound = contentFound
+                .Where(content => input.RootPathIncludes.Any(include => content.ContentId.Contains(include)));
         }
 
-        var previoslyObservedPages = request.Memory?.PagesWithTagsObserved ?? new HashSet<string>();
-        var recentlyChangedPages = pagesFound.Select(page => page.ContentId).ToHashSet();
+        var previoslyObservedContent = request.Memory?.ContentWithTagsObserved ?? new HashSet<string>();
+        var recentlyChangedContent = contentFound.Select(content => content.ContentId).ToHashSet();
 
-        var newPagesWithTags = recentlyChangedPages.Except(previoslyObservedPages);
+        var newContentWithTags = recentlyChangedContent.Except(previoslyObservedContent);
 
         var response = new PollingEventResponse<TagsMemory, SearchContentResponse>
         {
             Memory = new TagsMemory
             {
                 LastTriggeredTime = triggerTime,
-                PagesWithTagsObserved = previoslyObservedPages.Union(newPagesWithTags).ToHashSet(),
+                ContentWithTagsObserved = previoslyObservedContent.Union(newContentWithTags).ToHashSet(),
             }
         };
 
@@ -104,8 +104,8 @@ public class PagePollingList(InvocationContext invocationContext) : Invocable(in
         }
         else
         {
-            response.FlyBird = newPagesWithTags.Any();
-            response.Result = new SearchContentResponse(pagesFound.Where(x => newPagesWithTags.Contains(x.ContentId)));
+            response.FlyBird = newContentWithTags.Any();
+            response.Result = new SearchContentResponse(contentFound.Where(content => newContentWithTags.Contains(content.ContentId)));
         }
 
         return response;

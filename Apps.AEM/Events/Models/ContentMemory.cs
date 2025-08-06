@@ -1,6 +1,6 @@
 namespace Apps.AEM.Events.Models;
 
-public class PagesMemory
+public class ContentMemory
 {
     public DateTime LastTriggeredTime { get; set; }
 }

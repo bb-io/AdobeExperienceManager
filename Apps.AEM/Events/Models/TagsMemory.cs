@@ -4,5 +4,5 @@ public class TagsMemory
 {
     public DateTime LastTriggeredTime { get; set; }
 
-    public ISet<string> PagesWithTagsObserved { get; set; } = new HashSet<string>();
+    public ISet<string> ContentWithTagsObserved { get; set; } = new HashSet<string>();
 }

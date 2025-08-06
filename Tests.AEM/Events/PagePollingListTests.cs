@@ -10,21 +10,21 @@ namespace Tests.AEM.Events;
 [TestClass]
 public class PagePollingListTests : TestBase
 {
-    private PagePollingList _pollingList => new PagePollingList(InvocationContext);
+    private ContentPollingList _pollingList => new ContentPollingList(InvocationContext);
 
     [TestMethod]
     public async Task OnPagesCreatedOrUpdatedAsync_WithNullMemory_ShouldReturnCorrectResponse()
     {
         // Arrange
-        var request = new PollingEventRequest<PagesMemory>
+        var request = new PollingEventRequest<ContentMemory>
         {
             Memory = null,
             PollingTime = DateTime.UtcNow
         };
-        var optionalRequest = new OnPagesCreatedOrUpdatedRequest();
+        var optionalRequest = new OnContentCreatedOrUpdatedRequest();
 
         // Act
-        var response = await _pollingList.OnPagesCreatedOrUpdatedAsync(request, optionalRequest);
+        var response = await _pollingList.OnContentCreatedOrUpdated(request, optionalRequest);
 
         // Assert
         Assert.IsNotNull(response);
@@ -38,19 +38,19 @@ public class PagePollingListTests : TestBase
         Assert.IsFalse(response.FlyBird, "FlyBird should be false for first run with null memory");
         
         // Now test with existing memory
-        var memoryWithTime = new PagesMemory
+        var memoryWithTime = new ContentMemory
         {
             LastTriggeredTime = DateTime.UtcNow.AddMinutes(-10)  // 10 minutes in the past
         };
         
-        var secondRequest = new PollingEventRequest<PagesMemory>
+        var secondRequest = new PollingEventRequest<ContentMemory>
         {
             Memory = memoryWithTime,
             PollingTime = DateTime.UtcNow
         };
         
         // Act again with memory
-        var secondResponse = await _pollingList.OnPagesCreatedOrUpdatedAsync(secondRequest, optionalRequest);
+        var secondResponse = await _pollingList.OnContentCreatedOrUpdated(secondRequest, optionalRequest);
         
         // Log second response
         Console.WriteLine($"Second Response: {JsonConvert.SerializeObject(secondResponse, Formatting.Indented)}");
@@ -93,7 +93,7 @@ public class PagePollingListTests : TestBase
             Memory = new()
             {
                 LastTriggeredTime = testRunTime.AddDays(-10),
-                PagesWithTagsObserved = new HashSet<string>() // { "/content/test-site/en/Homepage" }
+                ContentWithTagsObserved = new HashSet<string>() // { "/content/test-site/en/Homepage" }
             },
             PollingTime = testRunTime
         };

@@ -17,7 +17,7 @@ public class UploadContentRequest : IUploadContentInput
     [Display("Target language", Description = "Target language to put instead of source language in path, eg. '/de-de/'.")]
     public string Locale { get; set; } = string.Empty;
 
-    [Display("Overwrite main page path", Description = "Specify source content path to be modified with source to target language replacement (this input will overwrite root path from content file). Useful for testing as target content could be created in a different location. Can be only used with 'Skip references' input set to 'true'.")]
+    [Display("Overwrite main content path", Description = "Specify source content path to be modified with source to target language replacement (this input will overwrite main or 'root' path from content file). Useful for testing as target content could be created in a different location. Can be only used with 'Skip references' input set to 'true'.")]
     [DataSource(typeof(PageDataHandler))]
     public string? ContentId { get; set; } = string.Empty;
 

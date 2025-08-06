@@ -23,7 +23,7 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
 {
     [Action("Search content", Description = "Search for content based on provided criteria.")]
     [BlueprintActionDefinition(BlueprintAction.SearchContent)]
-    public async Task<SearchContentResponse> SearchPagesAsync([ActionParameter] SearchContentRequest input)
+    public async Task<SearchContentResponse> SearchContent([ActionParameter] SearchContentRequest input)
     {
         var actionTime = DateTime.UtcNow;
         var searchRequest = ContentSearch.BuildRequest(new()
@@ -37,9 +37,9 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
             Events = input.Events,
         });
 
-        var pageResults = await Client.Paginate<ContentResponse>(searchRequest);
+        var contentResults = await Client.Paginate<ContentResponse>(searchRequest);
 
-        return new(pageResults);
+        return new(contentResults);
     }
 
     [Action("Download content", Description = "Download content as HTML.")]
@@ -90,7 +90,6 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
         }
     }
 
-    // TODO Accept original JSON as input
     [Action("Upload content", Description = "Updates content at specified path, creates a if there is none. Takes a translated file (interoperable HTML or XLIFF, as well as an original JSON) as input.")]
     [BlueprintActionDefinition(BlueprintAction.UploadContent)]
     public async Task<IEnumerable<UploadContentResponse>> UploadContent([ActionParameter] UploadContentRequest input)

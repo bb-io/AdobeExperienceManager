@@ -11,21 +11,21 @@ namespace Tests.AEM;
 public class ContentActionsTests : TestBase
 {
     [TestMethod]
-    public async Task SearchPagesAsync_NoParameters_ShouldReturnPages()
+    public async Task SearchContent_NoParameters_ShouldReturnContent()
     {
         // Arrange
         var actions = new ContentActions(InvocationContext, FileManager);
         
         // Act
-        var result = await actions.SearchPagesAsync(new SearchContentRequest());
+        var result = await actions.SearchContent(new SearchContentRequest());
         
         // Assert
-        Assert.IsTrue(result.Content.Any(), "No pages were returned");
+        Assert.IsTrue(result.Content.Any(), "No content items were returned");
         Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
     }
     
     [TestMethod]
-    public async Task SearchPagesAsync_WithRootPath_ShouldReturnFilteredPages()
+    public async Task SearchContent_WithRootPath_ShouldReturnFilteredContent()
     {
         // Arrange
         var actions = new ContentActions(InvocationContext, FileManager);
@@ -35,12 +35,12 @@ public class ContentActionsTests : TestBase
         };
         
         // Act
-        var result = await actions.SearchPagesAsync(request);
+        var result = await actions.SearchContent(request);
         
         // Assert
-        Assert.IsTrue(result.Content.Any(), "No pages were returned");
+        Assert.IsTrue(result.Content.Any(), "No content items were returned");
         Assert.IsTrue(result.Content.All(p => p.ContentId.StartsWith(request.RootPath)), 
-            "Some returned pages don't match the specified root path");
+            "Some returned content items don't match the specified root path");
         Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
     }
 
@@ -92,7 +92,7 @@ public class ContentActionsTests : TestBase
     }
 
     [TestMethod]
-    public async Task UpdatePageFromHtmlAsync_WithValidInput_ShouldSucceed()
+    public async Task UploadContent_WithValidInput_ShouldSucceed()
     {
         // Arrange
         var actions = new ContentActions(InvocationContext, FileManager);
@@ -117,7 +117,7 @@ public class ContentActionsTests : TestBase
     }
 
     [TestMethod]
-    public async Task UpdatePageFromOriginalJsonAsync_WithValidInput_ShouldSucceed()
+    public async Task UploadContent_WithValidInput_ShouldSucceed()
     {
         // Arrange
         var actions = new ContentActions(InvocationContext, FileManager);
