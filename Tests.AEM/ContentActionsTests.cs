@@ -52,7 +52,12 @@ public class ContentActionsTests : TestBase
         var request = new DownloadContentRequest
         {
             ContentId = "/content/wknd/language-masters/en/faqs",
-            IncludeReferenceContent = true
+            IncludeReferenceContent = true,
+            SkipReferenceContentPaths =
+            [
+                "/content/experience-fragments/wknd/language-masters/en/site/header/master",
+                "/content/experience-fragments/wknd/language-masters/en/site/footer/master",
+            ],
         };
         
         // Act
@@ -74,7 +79,7 @@ public class ContentActionsTests : TestBase
         var actions = new ContentActions(InvocationContext, FileManager);
         var request = new DownloadContentRequest
         {
-            ContentId = "/content/wknd/language-masters/en/faqs",
+            ContentId = "/content/wknd/language-masters/en/magazine/western-australia",
             IncludeReferenceContent = true,
             FileFormat = "original"
         };
@@ -100,11 +105,11 @@ public class ContentActionsTests : TestBase
         {
             Content = new FileReference
             {
-                Name = "About Us.html",
+                Name = "__content__wknd__language-masters__en__faqs.html",
                 ContentType = "text/html"
             },
             SourceLocale = "/en",
-            Locale = "/fr",
+            Locale = "/nl",
             IgnoreReferenceContentErrors = true
         };
         

@@ -57,7 +57,7 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
         }
 
         var referenceEntities = input.IncludeReferenceContent == true
-            ? await GetReferenceEntitiesAsync(response.Content)
+            ? await GetReferenceEntitiesAsync(response.Content, input.SkipReferenceContentPaths ?? [])
             : [];
 
         var filename = ContentPathToFilenameConverter.PathToFilename(input.ContentId);
@@ -196,14 +196,17 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
         return path.Replace(sourceLanguage, targetLanguage);
     }
 
-    private async Task<IEnumerable<ReferenceEntity>> GetReferenceEntitiesAsync(string content)
+    private async Task<IEnumerable<ReferenceEntity>> GetReferenceEntitiesAsync(
+        string content,
+        IEnumerable<string> skipReferenceContentPaths)
     {
         var processedPaths = new HashSet<string>();
-        return await ProcessReferencesRecursivelyAsync(content, processedPaths, 0);
+        return await ProcessReferencesRecursivelyAsync(content, skipReferenceContentPaths, processedPaths, 0);
     }
 
     private async Task<IEnumerable<ReferenceEntity>> ProcessReferencesRecursivelyAsync(
         string content,
+        IEnumerable<string> skipReferenceContentPaths,
         ISet<string> processedPaths,
         int depth,
         int maxDepth = 100)
@@ -217,6 +220,13 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
         foreach (var reference in references)
         {
             if (string.IsNullOrEmpty(reference.ReferencePath) || processedPaths.Contains(reference.ReferencePath))
+            {
+                continue;
+            }
+
+            var shouldSkip = skipReferenceContentPaths.Any(skipPath =>
+                reference.ReferencePath.Contains(skipPath, StringComparison.OrdinalIgnoreCase));
+            if (shouldSkip)
             {
                 continue;
             }
@@ -236,6 +246,7 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
 
                 referenceEntities.AddRange(await ProcessReferencesRecursivelyAsync(
                     referenceResponse.Content,
+                    skipReferenceContentPaths,
                     processedPaths,
                     depth + 1,
                     maxDepth));

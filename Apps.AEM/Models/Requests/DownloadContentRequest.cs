@@ -16,6 +16,9 @@ public class DownloadContentRequest : IDownloadContentInput
     [Display("Include reference content")]
     public bool? IncludeReferenceContent { get; set; }
 
+    [Display("Exclude reference content if their path contains")]
+    public IEnumerable<string>? SkipReferenceContentPaths { get; set; }
+
     [Display("File format", Description = "Format of the file to be downloaded, defaults to an interoperable HTML.")]
     [StaticDataSource(typeof(DownloadFileFormatHandler))]
     public string? FileFormat { get; set; } = "text/html";
