@@ -78,7 +78,7 @@ Notes on how the example works:
 
 ![Utility example](docs/images/utility_example.png)
 
-- The `Upload Content` action uploads the translated content back to AEM.
+- The `Upload content` action uploads the translated content back to AEM.
 
 ## Feedback
 
