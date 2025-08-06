@@ -128,7 +128,7 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
             try
             {
                 // allow overwriting source path from the action input
-                // so that target con can be uploaded to a vary different path from source
+                // so that target con can be uploaded to a very different path from source
                 var sourcePath = !string.IsNullOrWhiteSpace(input.ContentId) && !entity.ReferenceContent
                     ? input.ContentId
                     : entity.SourcePath;

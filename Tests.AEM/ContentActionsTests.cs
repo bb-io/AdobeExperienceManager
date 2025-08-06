@@ -92,7 +92,7 @@ public class ContentActionsTests : TestBase
     }
 
     [TestMethod]
-    public async Task UploadContent_WithValidInput_ShouldSucceed()
+    public async Task UploadContent_WithValidHTMLInput_ShouldSucceed()
     {
         // Arrange
         var actions = new ContentActions(InvocationContext, FileManager);
@@ -117,7 +117,7 @@ public class ContentActionsTests : TestBase
     }
 
     [TestMethod]
-    public async Task UploadContent_WithValidInput_ShouldSucceed()
+    public async Task UploadContent_WithValidOriginalInput_ShouldSucceed()
     {
         // Arrange
         var actions = new ContentActions(InvocationContext, FileManager);
