@@ -1,6 +1,6 @@
 # Blackbird.io AEM Cloud
 
-Blackbird is the new automation backbone for the language technology industry. It provides enterprise-scale automation and orchestration with a simple no-code/low-code platform, enabling organizations to identify, vet, and automate as many processes as possible—not just localization workflows, but any business or IT process. This repository contains an application deployable on Blackbird and usable within the workflow editor.
+Blackbird is the new automation backbone for the language technology industry. It provides enterprise-scale automation and orchestration with a simple no-code/low-code platform, enabling organizations to identify, vet, and automate as many processes as possibleï¿½not just localization workflows, but any business or IT process. This repository contains an application deployable on Blackbird and usable within the workflow editor.
 
 ## Introduction
 
@@ -13,7 +13,7 @@ AEM Cloud (Adobe Experience Manager) is a Content Management System (CMS) that a
 Before connecting to AEM Cloud, ensure you have the following:
 
 - An AEM Cloud instance running and accessible from the Blackbird platform.
-- The Blackbird AEM plugin installed on your AEM instance. Distribution and installation instructions are available [here](https://github.com/bb-io/AEM) (see prerequisites 1–8). An AEM maintainer or developer should perform this installation. If you use the on-premise version, follow [these instructions](https://github.com/bb-io/AEM/blob/main-aem-on-prem/README.md).
+- The Blackbird AEM plugin installed on your AEM instance. Distribution and installation instructions are available [here](https://github.com/bb-io/AEM) (see prerequisites 1ï¿½8). An AEM maintainer or developer should perform this installation. If you use the on-premise version, follow [these instructions](https://github.com/bb-io/AEM/blob/main-aem-on-prem/README.md).
 - A technical account and a private key created for it, allowing you to obtain a certificate to connect to AEM (after installing the plugin). See the `Steps to Create Technical Account` section below for instructions.
 - The base URL for your AEM environment (e.g., `https://author-xxxx-xxxxx.adobeaemcloud.com`).
 
