@@ -11,84 +11,130 @@ namespace Tests.AEM;
 public class ContentActionsTests : TestBase
 {
     [TestMethod]
-    public async Task SearchPagesAsync_NoParameters_ShouldReturnPages()
+    public async Task SearchContent_NoParameters_ShouldReturnContent()
     {
         // Arrange
         var actions = new ContentActions(InvocationContext, FileManager);
         
         // Act
-        var result = await actions.SearchPagesAsync(new SearchPagesRequest());
+        var result = await actions.SearchContent(new SearchContentRequest());
         
         // Assert
-        Assert.IsTrue(result.Pages.Any(), "No pages were returned");
+        Assert.IsTrue(result.Content.Any(), "No content items were returned");
         Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
     }
     
     [TestMethod]
-    public async Task SearchPagesAsync_WithRootPath_ShouldReturnFilteredPages()
+    public async Task SearchContent_WithRootPath_ShouldReturnFilteredContent()
     {
         // Arrange
         var actions = new ContentActions(InvocationContext, FileManager);
-        var request = new SearchPagesRequest 
+        var request = new SearchContentRequest 
         {
             RootPath = "/content/bb-aem-connector"
         };
         
         // Act
-        var result = await actions.SearchPagesAsync(request);
+        var result = await actions.SearchContent(request);
         
         // Assert
-        Assert.IsTrue(result.Pages.Any(), "No pages were returned");
-        Assert.IsTrue(result.Pages.All(p => p.Path.StartsWith(request.RootPath)), 
-            "Some returned pages don't match the specified root path");
+        Assert.IsTrue(result.Content.Any(), "No content items were returned");
+        Assert.IsTrue(result.Content.All(p => p.ContentId.StartsWith(request.RootPath)), 
+            "Some returned content items don't match the specified root path");
         Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
     }
 
     [TestMethod]
-    public async Task GetPageAsHtmlAsync_WithValidPath_ShouldReturnFileReference()
+    public async Task DownloadContent_Interoperable_WithValidPath_ShouldReturnFileReference()
     {
         // Arrange
         var actions = new ContentActions(InvocationContext, FileManager);
-        var request = new PageRequest
+        var request = new DownloadContentRequest
         {
-            PagePath = "/content/wknd/us/en/about-us"
+            ContentId = "/content/wknd/language-masters/en/faqs",
+            IncludeReferenceContent = true
         };
         
         // Act
-        var result = await actions.GetPageAsHtmlAsync(request, new()
-        {
-            IncludeReferenceContnent = true
-        });
+        var result = await actions.DownloadContent(request);
         
         // Assert
         Assert.IsNotNull(result, "Response should not be null");
-        Assert.IsNotNull(result.File, "File reference should not be null");
-        Assert.IsFalse(string.IsNullOrEmpty(result.File.Name), "File name should not be empty");
-        Assert.AreEqual("text/html", result.File.ContentType, "File content type should be text/html");
+        Assert.IsNotNull(result.Content, "File reference should not be null");
+        Assert.IsFalse(string.IsNullOrEmpty(result.Content.Name), "File name should not be empty");
+        Assert.AreEqual("text/html", result.Content.ContentType, "File content type should be text/html");
         
-        Console.WriteLine($"Generated HTML file: {result.File.Name}");
+        Console.WriteLine($"Generated HTML file: {result.Content.Name}");
     }
 
     [TestMethod]
-    public async Task UpdatePageFromHtmlAsync_WithValidInput_ShouldSucceed()
+    public async Task DownloadContent_Original_WithValidPath_ShouldReturnFileReference()
     {
         // Arrange
         var actions = new ContentActions(InvocationContext, FileManager);
-        var request = new UpdatePageFromHtmlRequest
+        var request = new DownloadContentRequest
         {
-            TargetPagePath = "/content/wknd/de/de/about-us",
-            File = new FileReference
+            ContentId = "/content/wknd/language-masters/en/faqs",
+            IncludeReferenceContent = true,
+            FileFormat = "original"
+        };
+        
+        // Act
+        var result = await actions.DownloadContent(request);
+        
+        // Assert
+        Assert.IsNotNull(result, "Response should not be null");
+        Assert.IsNotNull(result.Content, "File reference should not be null");
+        Assert.IsFalse(string.IsNullOrEmpty(result.Content.Name), "File name should not be empty");
+        Assert.AreEqual("application/json", result.Content.ContentType, "File content type should be application/json");
+        
+        Console.WriteLine($"Generated JSON file: {result.Content.Name}");
+    }
+
+    [TestMethod]
+    public async Task UploadContent_WithValidHTMLInput_ShouldSucceed()
+    {
+        // Arrange
+        var actions = new ContentActions(InvocationContext, FileManager);
+        var request = new UploadContentRequest
+        {
+            Content = new FileReference
             {
                 Name = "About Us.html",
                 ContentType = "text/html"
             },
-            SourceLanguage = "/en",
-            TargetLanguage = "/fr",
+            SourceLocale = "/en",
+            Locale = "/fr",
             IgnoreReferenceContentErrors = true
         };
         
         // Act
-        var response = await actions.UpdatePageFromHtmlAsync(request);
+        var response = await actions.UploadContent(request);
+
+        // Assert
+        Assert.IsNotNull(response, "Response should not be null");
+        System.Console.WriteLine(JsonConvert.SerializeObject(response, Formatting.Indented));
+    }
+
+    [TestMethod]
+    public async Task UploadContent_WithValidOriginalInput_ShouldSucceed()
+    {
+        // Arrange
+        var actions = new ContentActions(InvocationContext, FileManager);
+        var request = new UploadContentRequest
+        {
+            Content = new FileReference
+            {
+                Name = "__content__wknd__language-masters__en__faqs.json",
+                ContentType = "application/json"
+            },
+            SourceLocale = "/en",
+            Locale = "/fr",
+            IgnoreReferenceContentErrors = true
+        };
+
+        // Act
+        var response = await actions.UploadContent(request);
 
         // Assert
         Assert.IsNotNull(response, "Response should not be null");

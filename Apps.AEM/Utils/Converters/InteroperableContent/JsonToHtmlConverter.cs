@@ -1,26 +1,21 @@
 using Apps.AEM.Models.Dtos;
 using Apps.AEM.Models.Entities;
+using Blackbird.Applications.Sdk.Common.Exceptions;
 using HtmlAgilityPack;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Web;
 
-namespace Apps.AEM.Utils.Converters;
+namespace Apps.AEM.Utils.Converters.InteroperableContent;
 
 public static class JsonToHtmlConverter
 {
-    public static string ExtractTitle(string json)
-    {
-        var jsonObj = JsonConvert.DeserializeObject<JObject>(json);
-        return ExtractTitle(jsonObj!);
-    }
-
-    public static List<ReferenceDto> ExtractReferences(string json)
+    public static IEnumerable<ReferenceDto> ExtractReferences(string json)
     {
         var jsonObj = JsonConvert.DeserializeObject<JObject>(json);
         if (jsonObj == null)
         {
-            return new List<ReferenceDto>();
+            return [];
         }
 
         var references = new List<ReferenceDto>();
@@ -48,9 +43,10 @@ public static class JsonToHtmlConverter
         return references;
     }
 
-    public static string ConvertToHtml(string json, string sourcePath, List<ReferenceEntity> referenceEntities)
+    public static string ConvertToHtml(string json, string sourcePath, IEnumerable<ReferenceEntity> referenceEntities)
     {
-        var jsonObj = JsonConvert.DeserializeObject<JObject>(json)!;
+        var jsonObj = JsonConvert.DeserializeObject<JObject>(json)
+            ?? throw new PluginApplicationException("Received an empty intut for HTML conversion");
 
         var doc = new HtmlDocument();
         var htmlNode = doc.CreateElement("html");
@@ -97,16 +93,6 @@ public static class JsonToHtmlConverter
         parentNode.AppendChild(referenceDiv);
     }
 
-    private static string ExtractTitle(JObject jsonObj)
-    {
-        if (jsonObj["jcr:content"] != null && jsonObj["jcr:content"]?["jcr:title"] != null)
-        {
-            return jsonObj["jcr:content"]!["jcr:title"]!.ToString();
-        }
-
-        return "Untitled";
-    }
-
     private static void ProcessJsonContent(JObject jsonObj, HtmlNode parentNode, HtmlDocument doc, string jsonPath)
     {
         foreach (var property in jsonObj)
@@ -139,7 +125,7 @@ public static class JsonToHtmlConverter
                 {
                     var textNode = doc.CreateElement("span");
                     textNode.SetAttributeValue("data-json-path", currentPath);
-                    textNode.InnerHtml = property.Value?.ToString();
+                    textNode.InnerHtml = property.Value?.ToString() ?? string.Empty;
                     parentNode.AppendChild(textNode);
                 }
             }

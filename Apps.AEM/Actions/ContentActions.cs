@@ -3,11 +3,16 @@ using Apps.AEM.Models.Requests;
 using Apps.AEM.Models.Responses;
 using Apps.AEM.Utils;
 using Apps.AEM.Utils.Converters;
+using Apps.AEM.Utils.Converters.InteroperableContent;
+using Apps.AEM.Utils.Converters.OriginalContent;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Exceptions;
 using Blackbird.Applications.Sdk.Common.Invocation;
+using Blackbird.Applications.SDK.Blueprints;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
+using Blackbird.Filters.Transformations;
+using Blackbird.Filters.Xliff.Xliff2;
 using Newtonsoft.Json;
 using RestSharp;
 
@@ -16,103 +21,161 @@ namespace Apps.AEM.Actions;
 [ActionList("Content")]
 public class ContentActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) : Invocable(invocationContext)
 {
-    [Action("Search content", Description = "Search for content based on provided criteria.")]
-    public async Task<SearchPagesResponse> SearchPagesAsync([ActionParameter] SearchPagesRequest searchPagesRequest)
+    [Action("Search content", Description = "Search for content using specific criteria.")]
+    [BlueprintActionDefinition(BlueprintAction.SearchContent)]
+    public async Task<SearchContentResponse> SearchContent([ActionParameter] SearchContentRequest input)
     {
         var actionTime = DateTime.UtcNow;
         var searchRequest = ContentSearch.BuildRequest(new()
         {
-            RootPath = searchPagesRequest.RootPath,
-            StartDate = searchPagesRequest.StartDate ?? actionTime.AddDays(-31),
-            EndDate = searchPagesRequest.EndDate ?? actionTime,
-            Tags = searchPagesRequest.Tags,
-            Keyword = searchPagesRequest.Keyword,
-            ContentType = searchPagesRequest.ContentType,
-            Events = searchPagesRequest.Events,
+            RootPath = input.RootPath,
+            StartDate = input.StartDate ?? actionTime.AddDays(-31),
+            EndDate = input.EndDate ?? actionTime,
+            Tags = input.Tags,
+            Keyword = input.Keyword,
+            ContentType = input.ContentType,
+            Events = input.Events,
         });
 
-        var pageResults = await Client.Paginate<PageResponse>(searchRequest);
+        var contentResults = await Client.Paginate<ContentResponse>(searchRequest);
 
-        return new(pageResults);
+        return new(contentResults);
     }
 
-    [Action("Download content", Description = "Download content as HTML.")]
-    public async Task<FileResponse> GetPageAsHtmlAsync([ActionParameter] PageRequest pageRequest,
-        [ActionParameter] DownloadContentRequest downloadContentRequest)
+    [Action("Download content", Description = "Download content as interoperable HTML or the original JSON.")]
+    [BlueprintActionDefinition(BlueprintAction.DownloadContent)]
+    public async Task<DownloadContentResponse> DownloadContent(
+        [ActionParameter] DownloadContentRequest input)
     {
         var request = new RestRequest("/content/services/bb-aem-connector/content-exporter.json")
-            .AddQueryParameter("contentPath", pageRequest.PagePath);
+            .AddQueryParameter("contentPath", input.ContentId);
 
         var response = await Client.ExecuteWithErrorHandling(request);
-        var referenceEntities = downloadContentRequest.IncludeReferenceContnent == true
-            ? await GetReferenceEntitiesAsync(response.Content!)
-            : new List<ReferenceEntity>();
+        if (response.Content == null)
+        {
+            throw new PluginApplicationException("Failed to retrieve content. Response content is null.");
+        }
 
-        var htmlString = JsonToHtmlConverter.ConvertToHtml(response.Content!, pageRequest.PagePath, referenceEntities);
-        var memoryStream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(htmlString));
-        memoryStream.Position = 0;
+        var referenceEntities = input.IncludeReferenceContent == true
+            ? await GetReferenceEntitiesAsync(response.Content)
+            : [];
 
-        var title = JsonToHtmlConverter.ExtractTitle(response.Content!);
-        var fileReference = await fileManagementClient.UploadAsync(memoryStream, "text/html", $"{title}.html");
+        var filename = ContentPathToFilenameConverter.PathToFilename(input.ContentId);
 
-        return new(fileReference);
+        switch (input.FileFormat ?? "text/html")
+        {
+            case "original":
+                var jsonString = OriginalToJsonConverter.ConvertToJson(
+                    response.Content,
+                    input.ContentId,
+                    referenceEntities,
+                    input.IncludeReferenceContent == true);
+
+                var jsonMemoryStream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(jsonString)) { Position = 0 };
+
+                return new(await fileManagementClient.UploadAsync(jsonMemoryStream, "application/json", $"{filename}.json"));
+
+            case "text/html":
+                var htmlString = JsonToHtmlConverter.ConvertToHtml(
+                    response.Content,
+                    input.ContentId,
+                    referenceEntities);
+
+                var memoryStream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(htmlString)) { Position = 0 };
+
+                return new(await fileManagementClient.UploadAsync(memoryStream, "text/html", $"{filename}.html"));
+
+            default:
+                throw new PluginMisconfigurationException($"Unsupported file format: {input.FileFormat}");
+        }
     }
 
-    [Action("Upload content", Description = "Upload content from HTML.")]
-    public async Task<UpdatePageFromHtmlResponse> UpdatePageFromHtmlAsync([ActionParameter] UpdatePageFromHtmlRequest pageRequest)
+    [Action("Upload content", Description = "Update content at the specified path, or create it if it does not exist. Accepts a translated file (interoperable HTML or XLIFF) and the original JSON file as input.")]
+    [BlueprintActionDefinition(BlueprintAction.UploadContent)]
+    public async Task<IEnumerable<UploadContentResponse>> UploadContent([ActionParameter] UploadContentRequest input)
     {
-        var fileStream = await fileManagementClient.DownloadAsync(pageRequest.File);
+        if (!string.IsNullOrWhiteSpace(input.ContentId) && input.SkipUpdatingReferences != true)
+        {
+            throw new PluginMisconfigurationException("'ContentId' can only be set with 'SkipUpdatingReferences' being set to true, as path overwrite only impacts a main (root) content.");
+        }
+
+        var fileStream = await fileManagementClient.DownloadAsync(input.Content);
         var memoryStream = new MemoryStream();
         await fileStream.CopyToAsync(memoryStream);
         memoryStream.Position = 0;
 
-        var htmlString = System.Text.Encoding.UTF8.GetString(memoryStream.ToArray());
-        var sourcePath = HtmlToJsonConverter.ExtractSourcePath(htmlString);
-        var entities = HtmlToJsonConverter.ConvertToJson(htmlString);
-        var lastResult = new UpdatePageFromHtmlResponse();
-        
+        var inputString = System.Text.Encoding.UTF8.GetString(memoryStream.ToArray());
+
+        if (Xliff2Serializer.IsXliff2(inputString))
+        {
+            inputString = Transformation.Parse(inputString, input.Content.Name).Target().Serialize()
+                ?? throw new PluginMisconfigurationException("XLIFF did not contain any files");
+        }
+
+        var entities = OriginalJsonValidator.IsJson(inputString)
+            ? JsonToOriginalConverter.ConvertToEntities(inputString)
+            : HtmlToJsonConverter.ConvertToJson(inputString);
+
+        var uploadResults = new List<UploadContentResponse>();
+
         foreach (var entity in entities)
         {
+            if (entity.ReferenceContent && input.SkipUpdatingReferences == true)
+            {
+                continue;
+            }
+
             try
             {
-                if (string.IsNullOrEmpty(entity.SourcePath))
+                // allow overwriting source path from the action input
+                // so that target con can be uploaded to a very different path from source
+                var sourcePath = !string.IsNullOrWhiteSpace(input.ContentId) && !entity.ReferenceContent
+                    ? input.ContentId
+                    : entity.SourcePath;
+
+                var targetPath = ModifyPath(sourcePath, input.SourceLocale, input.Locale);
+
+                foreach (var reference in entity.References)
                 {
-                    entity.SourcePath = sourcePath;
+                    reference.ReferencePath = ModifyPath(reference.ReferencePath, input.SourceLocale, input.Locale);
                 }
 
-                var referenceTargetPath = ModifyPath(entity.SourcePath, pageRequest.SourceLanguage, pageRequest.TargetLanguage);
-                if (entity.References != null && !string.IsNullOrEmpty(pageRequest.SourceLanguage) && !string.IsNullOrEmpty(pageRequest.TargetLanguage))
-                {
-                    ModifyReferencePaths(entity.References, pageRequest.SourceLanguage, pageRequest.TargetLanguage);
-                }
-                
                 var jsonString = JsonConvert.SerializeObject(new
                 {
                     sourcePath = entity.SourcePath,
-                    targetPath = entity.ReferenceContent ? referenceTargetPath : pageRequest.TargetPagePath,
+                    targetPath,
                     targetContent = entity.TargetContent,
                     references = entity.References,
-                }, Formatting.Indented);
+                });
 
                 var request = new RestRequest("/content/services/bb-aem-connector/content-importer", Method.Post)
                     .AddHeader("Content-Type", "application/json")
                     .AddHeader("Accept", "application/json")
                     .AddStringBody(jsonString, DataFormat.Json);
 
-                lastResult = await Client.ExecuteWithErrorHandling<UpdatePageFromHtmlResponse>(request);
-                if (string.IsNullOrEmpty(lastResult.Message))
+                var uploadResult = await Client.ExecuteWithErrorHandling<UploadContentResponse>(request);
+                if (string.IsNullOrEmpty(uploadResult.Message))
                 {
-                    throw new PluginApplicationException("Update failed. No message returned from server.");
+                    throw new PluginApplicationException($"Failed to upload content. No message returned from server.");
                 }
+
+                uploadResults.Add(new()
+                {
+                    ContentId = targetPath,
+                    Message = uploadResult.Message.Replace(
+                        "Content imported successfully",
+                        "Content uploaded successfully"),
+                });
             }
             catch (Exception ex)
             {
-                if (entity.ReferenceContent && pageRequest.IgnoreReferenceContentErrors == true)
+                if (entity.ReferenceContent && input.IgnoreReferenceContentErrors == true)
                 {
-                    lastResult = new UpdatePageFromHtmlResponse
+                    uploadResults.Add(new()
                     {
-                        Message = $"Ignored error in reference content: {ex.Message}"
-                    };
+                        ContentId = entity.SourcePath,
+                        Message = $"Ignored error during reference content upload: {ex.Message}",
+                    });
                     continue;
                 }
 
@@ -120,53 +183,35 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
             }
         }
 
-        return lastResult;
+        return uploadResults;
     }
 
-    private string ModifyPath(string path, string? sourceLanguage, string? targetLanguage)
+    private static string ModifyPath(string path, string sourceLanguage, string targetLanguage)
     {
-        if (string.IsNullOrEmpty(path) || string.IsNullOrEmpty(sourceLanguage) || string.IsNullOrEmpty(targetLanguage))
+        if (string.IsNullOrWhiteSpace(path) || string.IsNullOrEmpty(sourceLanguage) || string.IsNullOrEmpty(targetLanguage))
         {
-            return path;
+            throw new PluginApplicationException("Main (root) rath, source language, and target language must be provided.");
         }
         
         return path.Replace(sourceLanguage, targetLanguage);
     }
-    
-    private void ModifyReferencePaths(IEnumerable<ReferenceEntity> references, string sourceLanguage, string targetLanguage)
-    {
-        if (references == null || string.IsNullOrEmpty(sourceLanguage) || string.IsNullOrEmpty(targetLanguage))
-        {
-            return;
-        }
-        
-        foreach (var reference in references)
-        {
-            if (reference != null && !string.IsNullOrEmpty(reference.ReferencePath))
-            {
-                reference.ReferencePath = ModifyPath(reference.ReferencePath, sourceLanguage, targetLanguage);
-            }
-        }
-    }
 
-    private async Task<List<ReferenceEntity>> GetReferenceEntitiesAsync(string content)
+    private async Task<IEnumerable<ReferenceEntity>> GetReferenceEntitiesAsync(string content)
     {
-        var referenceEntities = new List<ReferenceEntity>();
         var processedPaths = new HashSet<string>();
-
-        await ProcessReferencesRecursivelyAsync(content, referenceEntities, processedPaths, 0);
-        return referenceEntities;
+        return await ProcessReferencesRecursivelyAsync(content, processedPaths, 0);
     }
 
-    private async Task ProcessReferencesRecursivelyAsync(
+    private async Task<IEnumerable<ReferenceEntity>> ProcessReferencesRecursivelyAsync(
         string content,
-        List<ReferenceEntity> referenceEntities,
-        HashSet<string> processedPaths,
+        ISet<string> processedPaths,
         int depth,
         int maxDepth = 100)
     {
+        var referenceEntities = new List<ReferenceEntity>();
+
         if (depth > maxDepth || string.IsNullOrEmpty(content))
-            return;
+            return referenceEntities;
 
         var references = JsonToHtmlConverter.ExtractReferences(content);
         foreach (var reference in references)
@@ -183,15 +228,20 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
             var referenceResponse = await Client.ExecuteWithErrorHandling(referenceRequest);
             if (referenceResponse.IsSuccessful && !string.IsNullOrEmpty(referenceResponse.Content))
             {
-                var referenceEntity = new ReferenceEntity(
+                referenceEntities.Add(new ReferenceEntity(
                     reference.ReferencePath,
-                    referenceResponse.Content!,
+                    referenceResponse.Content,
                     reference.PropertyName,
-                    reference.PropertyPath);
+                    reference.PropertyPath));
 
-                referenceEntities.Add(referenceEntity);
-                await ProcessReferencesRecursivelyAsync(referenceResponse.Content!, referenceEntities, processedPaths, depth + 1, maxDepth);
+                referenceEntities.AddRange(await ProcessReferencesRecursivelyAsync(
+                    referenceResponse.Content,
+                    processedPaths,
+                    depth + 1,
+                    maxDepth));
             }
         }
+
+        return referenceEntities;
     }
 }

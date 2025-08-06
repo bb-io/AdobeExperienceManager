@@ -5,12 +5,12 @@ using Blackbird.Applications.Sdk.Common.Dynamic;
 
 namespace Apps.AEM.Models.Requests;
 
-public class SearchPagesRequest
+public class SearchContentRequest
 {
-    [Display("Root path", Description = "The path under which pages are searched.")]
+    [Display("Root path", Description = "The path under which content is searched.")]
     public string? RootPath { get; set; }
 
-    [Display("Tags", Description = "Find pages that have at least one of the listed tags.")]
+    [Display("Tags", Description = "Find content that have at least one of the listed tags.")]
     [DataSource(typeof(TagDataHandler))]
     public IEnumerable<string>? Tags { get; set; }
 
@@ -25,9 +25,9 @@ public class SearchPagesRequest
     [StaticDataSource(typeof(EventsDataHandler))]
     public IEnumerable<string>? Events { get; set; }
 
-    [Display("Created or modified after", Description = "Find pages created or modified after specified date. Last 31 days by default")]
+    [Display("Created or modified after", Description = "Find content created or modified after specified date. Last 31 days by default")]
     public DateTime? StartDate { get; set; }
 
-    [Display("Created before", Description = "Find pages created or modified before specified date.")]
+    [Display("Created before", Description = "Find content created or modified before specified date.")]
     public DateTime? EndDate { get; set; }
 }

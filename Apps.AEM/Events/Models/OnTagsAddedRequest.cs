@@ -7,7 +7,7 @@ namespace Apps.AEM.Events.Models;
 
 public class OnTagsAddedRequest
 {
-    [Display("Tags", Description = "Find pages that have at least one of the listed tags.")]
+    [Display("Tags", Description = "Find content that have at least one of the listed tags.")]
     [DataSource(typeof(TagDataHandler))]
     public IEnumerable<string> Tags { get; set; } = [];
 

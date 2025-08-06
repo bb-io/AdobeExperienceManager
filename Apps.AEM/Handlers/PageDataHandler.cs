@@ -18,10 +18,10 @@ public class PageDataHandler(InvocationContext invocationContext) : Invocable(in
             request.AddQueryParameter("keyword", context.SearchString);
         }
 
-        var pages = await Client.Paginate<PageResponse>(request, 100);
+        var pages = await Client.Paginate<ContentResponse>(request, 100);
 
         return pages
             .Where(x => context.SearchString == null || x.Title.Contains(context.SearchString, StringComparison.OrdinalIgnoreCase))
-            .Select(x => new DataSourceItem(x.Path, x.Title));
+            .Select(x => new DataSourceItem(x.ContentId, x.Title));
     }
 }

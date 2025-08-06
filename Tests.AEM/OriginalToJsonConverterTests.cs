@@ -1,11 +1,11 @@
-using Apps.AEM.Utils.Converters.InteroperableContent;
+using Apps.AEM.Utils.Converters.OriginalContent;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Tests.AEM.Base;
 
 namespace Tests.AEM;
 
 [TestClass]
-public class JsonToHtmlConverterTests : TestBase
+public class OriginalToJsonConverterTests : TestBase
 {
     private readonly string _testJson = @"{
             ""jcr:content"": {
@@ -28,17 +28,17 @@ public class JsonToHtmlConverterTests : TestBase
         }";
 
     [TestMethod]
-    public async Task ConvertToHtml_ValidJson_ReturnsExpectedHtml()
+    public async Task ConvertToJson_ValidOriginalJson_ReturnsExpectedHtml()
     {
         // Act
-        var html = JsonToHtmlConverter.ConvertToHtml(_testJson, "/content/test-page", []);
+        var jsonString = OriginalToJsonConverter.ConvertToJson(_testJson, "/content/test-page", []);
 
         // Assert
-        Assert.IsFalse(string.IsNullOrEmpty(html), "HTML should not be empty");
-        Assert.IsTrue(html.Contains("Beneath the vast expanse of a sky unblemished by cloud or"), "Rich text content missing");
+        Assert.IsFalse(string.IsNullOrEmpty(jsonString), "HTML should not be empty");
+        Assert.IsTrue(jsonString.Contains("Beneath the vast expanse of a sky unblemished by cloud or"), "Rich text content missing");
         
-        var memoryStream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(html));
+        var memoryStream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(jsonString));
         memoryStream.Position = 0;
-        await FileManager.UploadAsync(memoryStream, "text/html", "test.html");
+        await FileManager.UploadAsync(memoryStream, "application/json", $"test-download-content-action-original-output.json");
     }
 }
