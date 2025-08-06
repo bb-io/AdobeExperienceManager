@@ -21,7 +21,7 @@ namespace Apps.AEM.Actions;
 [ActionList("Content")]
 public class ContentActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) : Invocable(invocationContext)
 {
-    [Action("Search content", Description = "Search for content based on provided criteria.")]
+    [Action("Search content", Description = "Search for content using specific criteria.")]
     [BlueprintActionDefinition(BlueprintAction.SearchContent)]
     public async Task<SearchContentResponse> SearchContent([ActionParameter] SearchContentRequest input)
     {
@@ -42,7 +42,7 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
         return new(contentResults);
     }
 
-    [Action("Download content", Description = "Download content as HTML.")]
+    [Action("Download content", Description = "Download content as interoperable HTML or the original JSON.")]
     [BlueprintActionDefinition(BlueprintAction.DownloadContent)]
     public async Task<DownloadContentResponse> DownloadContent(
         [ActionParameter] DownloadContentRequest input)
@@ -90,7 +90,7 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
         }
     }
 
-    [Action("Upload content", Description = "Updates content at specified path, creates a if there is none. Takes a translated file (interoperable HTML or XLIFF, as well as an original JSON) as input.")]
+    [Action("Upload content", Description = "Update content at the specified path, or create it if it does not exist. Accepts a translated file (interoperable HTML or XLIFF) and the original JSON file as input.")]
     [BlueprintActionDefinition(BlueprintAction.UploadContent)]
     public async Task<IEnumerable<UploadContentResponse>> UploadContent([ActionParameter] UploadContentRequest input)
     {

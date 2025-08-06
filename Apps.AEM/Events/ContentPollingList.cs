@@ -11,7 +11,7 @@ namespace Apps.AEM.Events;
 [PollingEventList]
 public class ContentPollingList(InvocationContext invocationContext) : Invocable(invocationContext)
 {
-    [PollingEvent("On content created or updated", Description = "Polling event that periodically checks for new or updated content. If the any content are found, the event is triggered.")]
+    [PollingEvent("On content created or updated", Description = "A polling event that periodically checks for new or updated content. If any content is found, the event is triggered.")]
     [BlueprintEventDefinition(BlueprintEvent.ContentCreatedOrUpdatedMultiple)]
     public async Task<PollingEventResponse<ContentMemory, SearchContentResponse>> OnContentCreatedOrUpdated(
         PollingEventRequest<ContentMemory> request,
@@ -56,7 +56,7 @@ public class ContentPollingList(InvocationContext invocationContext) : Invocable
         };
     }
 
-    [PollingEvent("On tag added", Description = "Periodically checks for new content with any of the specified tags. If there is any content found, the event is triggered.")]
+    [PollingEvent("On tag added", Description = "A polling event that for new content with any of the specified tags. If any content is found, the event is triggered.")]
     public async Task<PollingEventResponse<TagsMemory, SearchContentResponse>> OnTagAddedAsync(
         PollingEventRequest<TagsMemory> request,
         [PollingEventParameter] OnTagsAddedRequest input)
