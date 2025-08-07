@@ -97,7 +97,7 @@ public static class HtmlToJsonConverter
                         jsonPath = jsonPath.Substring("references.".Length);
                     }
 
-                    if (IsRichTextPath(jsonPath) && element.Name != "span")
+                    if (IsRichTextPath(jsonPath) && element.Name != "div")
                     {
                         var cleanElement = element.CloneNode(true);
                         cleanElement.Attributes.Remove("data-json-path");

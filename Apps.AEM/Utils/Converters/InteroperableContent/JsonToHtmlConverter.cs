@@ -123,7 +123,7 @@ public static class JsonToHtmlConverter
             {
                 if (!currentPath.EndsWith(".layout"))
                 {
-                    var textNode = doc.CreateElement("span");
+                    var textNode = doc.CreateElement("div");
                     textNode.SetAttributeValue("data-json-path", currentPath);
                     textNode.InnerHtml = property.Value?.ToString() ?? string.Empty;
                     parentNode.AppendChild(textNode);
@@ -157,7 +157,7 @@ public static class JsonToHtmlConverter
             }
             else if (item.Type != JTokenType.Null)
             {
-                var textNode = doc.CreateElement("span");
+                var textNode = doc.CreateElement("div");
                 textNode.SetAttributeValue("data-json-path", itemPath);
                 textNode.InnerHtml = item.ToString();
                 parentNode.AppendChild(textNode);
