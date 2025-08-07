@@ -51,7 +51,7 @@ public class ContentActionsTests : TestBase
         var actions = new ContentActions(InvocationContext, FileManager);
         var request = new DownloadContentRequest
         {
-            ContentId = "/content/wknd/language-masters/en/faqs",
+            ContentId = "/content/wknd/language-masters/en/magazine/western-australia",
             IncludeReferenceContent = true,
             SkipReferenceContentPaths =
             [
@@ -70,6 +70,7 @@ public class ContentActionsTests : TestBase
         Assert.AreEqual("text/html", result.Content.ContentType, "File content type should be text/html");
         
         Console.WriteLine($"Generated HTML file: {result.Content.Name}");
+        Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
     }
 
     [TestMethod]

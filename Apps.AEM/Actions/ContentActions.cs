@@ -8,6 +8,7 @@ using Apps.AEM.Utils.Converters.OriginalContent;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Exceptions;
+using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.SDK.Blueprints;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
@@ -56,11 +57,13 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
             throw new PluginApplicationException("Failed to retrieve content. Response content is null.");
         }
 
-        var referenceEntities = input.IncludeReferenceContent == true
+        var (referenceEntities, referenceErrors) = input.IncludeReferenceContent == true
             ? await GetReferenceEntitiesAsync(response.Content, input.SkipReferenceContentPaths ?? [])
-            : [];
+            : (new List<ReferenceEntity>(), new List<string>());
 
         var filename = ContentPathToFilenameConverter.PathToFilename(input.ContentId);
+
+        FileReference outputFile;
 
         switch (input.FileFormat ?? "text/html")
         {
@@ -73,7 +76,8 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
 
                 var jsonMemoryStream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(jsonString)) { Position = 0 };
 
-                return new(await fileManagementClient.UploadAsync(jsonMemoryStream, "application/json", $"{filename}.json"));
+                outputFile = await fileManagementClient.UploadAsync(jsonMemoryStream, "application/json", $"{filename}.json");
+                break;
 
             case "text/html":
                 var htmlString = JsonToHtmlConverter.ConvertToHtml(
@@ -83,11 +87,14 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
 
                 var memoryStream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(htmlString)) { Position = 0 };
 
-                return new(await fileManagementClient.UploadAsync(memoryStream, "text/html", $"{filename}.html"));
+                outputFile = await fileManagementClient.UploadAsync(memoryStream, "text/html", $"{filename}.html");
+                break;
 
             default:
                 throw new PluginMisconfigurationException($"Unsupported file format: {input.FileFormat}");
         }
+
+        return new(outputFile, referenceErrors);
     }
 
     [Action("Upload content", Description = "Update content at the specified path, or create it if it does not exist. Accepts a translated file (interoperable HTML or XLIFF) and the original JSON file as input.")]
@@ -196,7 +203,7 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
         return path.Replace(sourceLanguage, targetLanguage);
     }
 
-    private async Task<IEnumerable<ReferenceEntity>> GetReferenceEntitiesAsync(
+    private async Task<(IEnumerable<ReferenceEntity> entities, IEnumerable<string> errors)> GetReferenceEntitiesAsync(
         string content,
         IEnumerable<string> skipReferenceContentPaths)
     {
@@ -204,17 +211,18 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
         return await ProcessReferencesRecursivelyAsync(content, skipReferenceContentPaths, processedPaths, 0);
     }
 
-    private async Task<IEnumerable<ReferenceEntity>> ProcessReferencesRecursivelyAsync(
+    private async Task<(IEnumerable<ReferenceEntity> entities, IEnumerable<string> errors)> ProcessReferencesRecursivelyAsync(
         string content,
         IEnumerable<string> skipReferenceContentPaths,
         ISet<string> processedPaths,
         int depth,
         int maxDepth = 100)
     {
-        var referenceEntities = new List<ReferenceEntity>();
+        var entities = new List<ReferenceEntity>();
+        var errors = new List<string>();
 
         if (depth > maxDepth || string.IsNullOrEmpty(content))
-            return referenceEntities;
+            return new(entities, errors);
 
         var references = JsonToHtmlConverter.ExtractReferences(content);
         foreach (var reference in references)
@@ -224,8 +232,7 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
                 continue;
             }
 
-            var shouldSkip = skipReferenceContentPaths.Any(skipPath =>
-                reference.ReferencePath.Contains(skipPath, StringComparison.OrdinalIgnoreCase));
+            var shouldSkip = skipReferenceContentPaths.Any(skipPath => reference.ReferencePath.Contains(skipPath, StringComparison.OrdinalIgnoreCase));
             if (shouldSkip)
             {
                 continue;
@@ -235,24 +242,39 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
             var referenceRequest = new RestRequest("/content/services/bb-aem-connector/content-exporter.json")
                 .AddQueryParameter("contentPath", reference.ReferencePath);
 
-            var referenceResponse = await Client.ExecuteWithErrorHandling(referenceRequest);
-            if (referenceResponse.IsSuccessful && !string.IsNullOrEmpty(referenceResponse.Content))
+            string referenceContent;
+
+            try
             {
-                referenceEntities.Add(new ReferenceEntity(
+                var referenceResponse = await Client.ExecuteWithErrorHandling(referenceRequest);
+                referenceContent = referenceResponse.Content ?? string.Empty;
+            }
+            catch (Exception)
+            {
+                errors.Add($"{reference.ReferencePath}");
+                continue;
+            }
+
+            if (!string.IsNullOrWhiteSpace(referenceContent))
+            {
+                entities.Add(new ReferenceEntity(
                     reference.ReferencePath,
-                    referenceResponse.Content,
+                    referenceContent,
                     reference.PropertyName,
                     reference.PropertyPath));
 
-                referenceEntities.AddRange(await ProcessReferencesRecursivelyAsync(
-                    referenceResponse.Content,
+                var recursiveResult = await ProcessReferencesRecursivelyAsync(
+                    referenceContent,
                     skipReferenceContentPaths,
                     processedPaths,
                     depth + 1,
-                    maxDepth));
+                    maxDepth);
+
+                entities.AddRange(recursiveResult.entities);
+                errors.AddRange(recursiveResult.errors);
             }
         }
 
-        return referenceEntities;
+        return (entities, errors);
     }
 }
