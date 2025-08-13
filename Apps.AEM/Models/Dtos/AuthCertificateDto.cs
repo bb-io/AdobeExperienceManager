@@ -1,7 +1,6 @@
 ﻿using Newtonsoft.Json;
 
 namespace Apps.AEM.Models.Dtos;
-
 public class AuthCertificateDto
 {
     [JsonProperty("ok")]

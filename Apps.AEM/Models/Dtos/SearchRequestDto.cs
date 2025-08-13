@@ -1,5 +1,4 @@
 ﻿namespace Apps.AEM.Models.Dtos;
-
 public class SearchRequestDto
 {
     public DateTime StartDate { get; set; }

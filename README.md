@@ -90,6 +90,22 @@ Notes on how the example works:
 
 - The `Upload content` action uploads the translated content back to AEM.
 
+## Demo video
+
+In this demo, we showcase a flexible and highly configurable alternative to a traditional AEM Connector using Blackbird.io.
+
+With Blackbird, you can:
+Automatically pull content from Adobe Experience Manager (AEM)
+Orchestrate translation or transformation workflows
+Push localized or modified content back into AEM
+Add human checkpoints, AI enrichment, and custom routing
+
+Unlike standard AEM connectors, Blackbird.io gives you full control over the process, with no-code configuration and enterprise-grade flexibility.
+
+import { YouTube } from '@astro-community/astro-embed-youtube';
+
+<YouTube id="https://youtu.be/aOInlw5ADGo" />
+
 ## Feedback
 
 Do you want to use this app or do you have feedback on our implementation? Reach out to us using the [established channels](https://www.blackbird.io/) or create an issue.

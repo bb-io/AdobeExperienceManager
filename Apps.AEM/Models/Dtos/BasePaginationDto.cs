@@ -1,7 +1,6 @@
 using Blackbird.Applications.Sdk.Common;
 
 namespace Apps.AEM.Models.Dtos;
-
 public class BasePaginationDto<T>
 {
     [DefinitionIgnore]

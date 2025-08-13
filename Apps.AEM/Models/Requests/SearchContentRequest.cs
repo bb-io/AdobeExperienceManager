@@ -4,7 +4,6 @@ using Blackbird.Applications.Sdk.Common.Dictionaries;
 using Blackbird.Applications.Sdk.Common.Dynamic;
 
 namespace Apps.AEM.Models.Requests;
-
 public class SearchContentRequest
 {
     [Display("Root path", Description = "The path under which content is searched.")]
