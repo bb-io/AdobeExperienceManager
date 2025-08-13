@@ -1,7 +1,6 @@
-namespace Apps.AEM.Models.Dtos;
-
 using Newtonsoft.Json;
 
+namespace Apps.AEM.Models.Dtos;
 public class AccessTokenDto
 {
     [JsonProperty("token_type")]

@@ -1,7 +1,6 @@
 using Newtonsoft.Json;
 
 namespace Apps.AEM.Models.Entities;
-
 public record class ReferenceEntity
 {
     [JsonProperty("referencePath")]

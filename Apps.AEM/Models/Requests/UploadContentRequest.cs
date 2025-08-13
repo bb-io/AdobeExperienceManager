@@ -5,7 +5,6 @@ using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.SDK.Blueprints.Interfaces.CMS;
 
 namespace Apps.AEM.Models.Requests;
-
 public class UploadContentRequest : IUploadContentInput
 {
     [Display("Content", Description = "File to upload, can be interoperable HTML, XLIFF or an original JSON.")]

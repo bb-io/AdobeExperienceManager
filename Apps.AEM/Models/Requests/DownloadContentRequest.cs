@@ -6,7 +6,6 @@ using Blackbird.Applications.SDK.Blueprints.Handlers;
 using Blackbird.Applications.SDK.Blueprints.Interfaces.CMS;
 
 namespace Apps.AEM.Models.Requests;
-
 public class DownloadContentRequest : IDownloadContentInput
 {
     [Display("Content path", Description = "Content path to be used in the request.")]

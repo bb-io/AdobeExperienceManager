@@ -1,7 +1,6 @@
 using Newtonsoft.Json.Linq;
 
 namespace Apps.AEM.Models.Entities;
-
 public class JsonContentEntity(string sourcePath, JObject targetContent, List<ReferenceEntity> references, bool referenceContent)
 {
     public string SourcePath { get; set; } = sourcePath;
