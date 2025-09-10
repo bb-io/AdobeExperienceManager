@@ -17,7 +17,10 @@ public class ContentActionsTests : TestBase
         var actions = new ContentActions(InvocationContext, FileManager);
         
         // Act
-        var result = await actions.SearchContent(new SearchContentRequest());
+        var result = await actions.SearchContent(new SearchContentRequest()
+        {
+            StartDate = DateTime.UtcNow.AddDays(-90), // Default is 31 days, so we extend it to ensure we get results from a test instance
+        });
         
         // Assert
         Assert.IsTrue(result.Content.Any(), "No content items were returned");
@@ -31,7 +34,8 @@ public class ContentActionsTests : TestBase
         var actions = new ContentActions(InvocationContext, FileManager);
         var request = new SearchContentRequest 
         {
-            RootPath = "/content/bb-aem-connector"
+            RootPath = "/content/wknd/us/en/magazine/",
+            StartDate = DateTime.UtcNow.AddDays(-90),
         };
         
         // Act
