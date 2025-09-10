@@ -92,7 +92,7 @@ public class PagePollingListTests : TestBase
         {
             Memory = new()
             {
-                LastTriggeredTime = testRunTime.AddDays(-10),
+                LastTriggeredTime = testRunTime.AddDays(-90), // 90 days in the past as test instance data might be old
                 ContentWithTagsObserved = new HashSet<string>() // { "/content/test-site/en/Homepage" }
             },
             PollingTime = testRunTime

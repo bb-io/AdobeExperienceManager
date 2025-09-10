@@ -11,7 +11,7 @@ public static class ContentSearch
 
     public static RestRequest BuildRequest(SearchRequestDto searchParams)
     {
-        var request = new RestRequest("/content/services/bb-aem-connector/pages/events.json");
+        var request = new RestRequest("/content/services/bb-aem-connector/content/events.json");
 
         // Dates
         request.AddQueryParameter("startDate", searchParams.StartDate.ToString(SearchDateFormat));
