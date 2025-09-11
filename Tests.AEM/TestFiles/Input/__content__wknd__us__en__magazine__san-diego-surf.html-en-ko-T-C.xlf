@@ -1,0 +1,51 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<xliff xmlns:mda="urn:oasis:names:tc:xliff:metadata:2.0" xmlns:its="http://www.w3.org/2005/11/its" xmlns="urn:oasis:names:tc:xliff:document:2.0" srcLang="en" trgLang="ko" version="2.0">
+  <file id="f1">
+    <skeleton>&lt;!DOCTYPE html&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta charset="UTF-8"&gt;&lt;meta name="blackbird-source-path" content="/content/wknd/us/en/magazine/san-diego-surf"&gt;&lt;/head&gt;&lt;body&gt;&lt;div data-root="true" data-source-path="/content/wknd/us/en/magazine/san-diego-surf" data-original-json="{&amp;quot;jcr:content&amp;quot;:{&amp;quot;jcr:title&amp;quot;:&amp;quot;San Diego Surf Spots&amp;quot;,&amp;quot;shortDescription&amp;quot;:&amp;quot;Best beach breaks&amp;quot;,&amp;quot;jcr:description&amp;quot;:&amp;quot;From the hippie beaches of Ocean Beach to the ritzy shores of La Jolla and everywhere in between. Discover the San Diego surf scene.&amp;quot;,&amp;quot;root&amp;quot;:{&amp;quot;container&amp;quot;:{&amp;quot;image&amp;quot;:{},&amp;quot;container&amp;quot;:{&amp;quot;title&amp;quot;:{},&amp;quot;title_875115054&amp;quot;:{&amp;quot;jcr:title&amp;quot;:&amp;quot;By Justin Barr&amp;quot;},&amp;quot;contentfragment&amp;quot;:{&amp;quot;text&amp;quot;:&amp;quot;&amp;quot;,&amp;quot;par2&amp;quot;:{&amp;quot;image&amp;quot;:{}},&amp;quot;par1&amp;quot;:{&amp;quot;image&amp;quot;:{&amp;quot;jcr:title&amp;quot;:&amp;quot;Gorgeous beach point breaks&amp;quot;}},&amp;quot;par4&amp;quot;:{&amp;quot;image&amp;quot;:{}},&amp;quot;par5&amp;quot;:{&amp;quot;image&amp;quot;:{}}},&amp;quot;experiencefragment&amp;quot;:{}},&amp;quot;container_223059690&amp;quot;:{&amp;quot;title&amp;quot;:{&amp;quot;jcr:title&amp;quot;:&amp;quot;SHARE THIS STORY&amp;quot;},&amp;quot;sharing&amp;quot;:{},&amp;quot;separator&amp;quot;:{},&amp;quot;list&amp;quot;:{}}}}},&amp;quot;references&amp;quot;:[{&amp;quot;propertyName&amp;quot;:&amp;quot;fileReference&amp;quot;,&amp;quot;propertyPath&amp;quot;:&amp;quot;jcr:content/root/container/image&amp;quot;,&amp;quot;referencePath&amp;quot;:&amp;quot;/content/dam/wknd-shared/en/magazine/san-diego-surf-spots/beach-walking.jpg&amp;quot;},{&amp;quot;propertyName&amp;quot;:&amp;quot;fragmentPath&amp;quot;,&amp;quot;propertyPath&amp;quot;:&amp;quot;jcr:content/root/container/container/contentfragment&amp;quot;,&amp;quot;referencePath&amp;quot;:&amp;quot;/content/dam/wknd-shared/en/magazine/san-diego-surf-spots/san-diego-surfspots&amp;quot;},{&amp;quot;propertyName&amp;quot;:&amp;quot;fileReference&amp;quot;,&amp;quot;propertyPath&amp;quot;:&amp;quot;jcr:content/root/container/container/contentfragment/par2/image&amp;quot;,&amp;quot;referencePath&amp;quot;:&amp;quot;/content/dam/wknd-shared/en/magazine/san-diego-surf-spots/adobestock-166388792.jpeg&amp;quot;},{&amp;quot;propertyName&amp;quot;:&amp;quot;fileReference&amp;quot;,&amp;quot;propertyPath&amp;quot;:&amp;quot;jcr:content/root/container/container/contentfragment/par1/image&amp;quot;,&amp;quot;referencePath&amp;quot;:&amp;quot;/content/dam/wknd-shared/en/magazine/san-diego-surf-spots/adobestock-164735399.jpeg&amp;quot;},{&amp;quot;propertyName&amp;quot;:&amp;quot;fileReference&amp;quot;,&amp;quot;propertyPath&amp;quot;:&amp;quot;jcr:content/root/container/container/contentfragment/par4/image&amp;quot;,&amp;quot;referencePath&amp;quot;:&amp;quot;/content/dam/wknd-shared/en/magazine/san-diego-surf-spots/adobestock-266406767.jpeg&amp;quot;},{&amp;quot;propertyName&amp;quot;:&amp;quot;fileReference&amp;quot;,&amp;quot;propertyPath&amp;quot;:&amp;quot;jcr:content/root/container/container/contentfragment/par5/image&amp;quot;,&amp;quot;referencePath&amp;quot;:&amp;quot;/content/dam/wknd-shared/en/magazine/san-diego-surf-spots/adobestock-272184938.jpeg&amp;quot;},{&amp;quot;propertyName&amp;quot;:&amp;quot;fragmentVariationPath&amp;quot;,&amp;quot;propertyPath&amp;quot;:&amp;quot;jcr:content/root/container/container/experiencefragment&amp;quot;,&amp;quot;referencePath&amp;quot;:&amp;quot;/content/experience-fragments/wknd/language-masters/en/contributors/justin-barr/byline&amp;quot;},{&amp;quot;referencePath&amp;quot;:&amp;quot;/content/experience-fragments/wknd/language-masters/en/site/header/master&amp;quot;},{&amp;quot;referencePath&amp;quot;:&amp;quot;/content/experience-fragments/wknd/language-masters/en/site/footer/master&amp;quot;}]}"&gt;&lt;div data-json-path="jcr:content.jcr:title"&gt;San Diego Surf Spots&lt;/div&gt;&lt;div data-json-path="jcr:content.shortDescription"&gt;Best beach breaks&lt;/div&gt;&lt;div data-json-path="jcr:content.jcr:description"&gt;From the hippie beaches of Ocean Beach to the ritzy shores of La Jolla and everywhere in between. Discover the San Diego surf scene.&lt;/div&gt;&lt;div data-json-path="jcr:content.root.container.container.title_875115054.jcr:title"&gt;By Justin Barr&lt;/div&gt;&lt;div data-json-path="jcr:content.root.container.container.contentfragment.text"&gt;&lt;/div&gt;&lt;div data-json-path="jcr:content.root.container.container.contentfragment.par1.image.jcr:title"&gt;Gorgeous beach point breaks&lt;/div&gt;&lt;div data-json-path="jcr:content.root.container.container_223059690.title.jcr:title"&gt;SHARE THIS STORY&lt;/div&gt;&lt;/div&gt;&lt;/body&gt;&lt;/html&gt;</skeleton>
+    <mda:metadata>
+      <mda:metaGroup category="blackbird">
+        <mda:meta type="original-name">__content__wknd__us__en__magazine__san-diego-surf.html</mda:meta>
+        <mda:meta type="original-media-type">text/html</mda:meta>
+        <mda:meta type="original-name">__content__wknd__us__en__magazine__san-diego-surf.html</mda:meta>
+        <mda:meta type="original-media-type">text/html</mda:meta>
+      </mda:metaGroup>
+    </mda:metadata>
+    <unit id="u1" name="/html[1]/body[1]/div[1]/div[1]" its:locQualityRatingScore="100" its:locQualityRatingScoreThreshold="99">
+      <segment state="reviewed">
+        <source>San Diego Surf Spots</source>
+        <target>샌디에이고 서핑 명소</target>
+      </segment>
+    </unit>
+    <unit id="u2" name="/html[1]/body[1]/div[1]/div[2]" its:locQualityRatingScore="15" its:locQualityRatingScoreThreshold="99">
+      <segment state="translated">
+        <source>Best beach breaks</source>
+        <target>최고의 해변 휴가</target>
+      </segment>
+    </unit>
+    <unit id="u3" name="/html[1]/body[1]/div[1]/div[3]" its:locQualityRatingScore="100" its:locQualityRatingScoreThreshold="99">
+      <segment state="reviewed">
+        <source>From the hippie beaches of Ocean Beach to the ritzy shores of La Jolla and everywhere in between. Discover the San Diego surf scene.</source>
+        <target>오션 비치의 히피 해변에서부터 라호야의 화려한 해안까지, 그리고 그 사이 모든 곳. 샌디에이고의 서핑 명소를 탐험해 보세요.</target>
+      </segment>
+    </unit>
+    <unit id="u4" name="/html[1]/body[1]/div[1]/div[4]" its:locQualityRatingScore="100" its:locQualityRatingScoreThreshold="99">
+      <segment state="reviewed">
+        <source>By Justin Barr</source>
+        <target>저자: Justin Barr</target>
+      </segment>
+    </unit>
+    <unit id="u5" name="/html[1]/body[1]/div[1]/div[6]" its:locQualityRatingScore="100" its:locQualityRatingScoreThreshold="99">
+      <segment state="reviewed">
+        <source>Gorgeous beach point breaks</source>
+        <target>아름다운 해변 포인트 브레이크</target>
+      </segment>
+    </unit>
+    <unit id="u6" name="/html[1]/body[1]/div[1]/div[7]" its:locQualityRatingScore="100" its:locQualityRatingScoreThreshold="99">
+      <segment state="reviewed">
+        <source>SHARE THIS STORY</source>
+        <target>이 이야기를 공유하세요</target>
+      </segment>
+    </unit>
+  </file>
+</xliff>
