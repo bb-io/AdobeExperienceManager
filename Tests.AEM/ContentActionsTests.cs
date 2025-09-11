@@ -102,7 +102,7 @@ public class ContentActionsTests : TestBase
     }
 
     [TestMethod]
-    public async Task UploadContent_WithValidHTMLInput_ShouldSucceed()
+    public async Task UploadContent_WithInteroperableHTMLInput_ShouldSucceed()
     {
         // Arrange
         var actions = new ContentActions(InvocationContext, FileManager);
@@ -118,6 +118,31 @@ public class ContentActionsTests : TestBase
             IgnoreReferenceContentErrors = true
         };
         
+        // Act
+        var response = await actions.UploadContent(request);
+
+        // Assert
+        Assert.IsNotNull(response, "Response should not be null");
+        System.Console.WriteLine(JsonConvert.SerializeObject(response, Formatting.Indented));
+    }
+
+    [TestMethod]
+    public async Task UploadContent_WithInteroperableXliffInput_ShouldSucceed()
+    {
+        // Arrange
+        var actions = new ContentActions(InvocationContext, FileManager);
+        var request = new UploadContentRequest
+        {
+            Content = new FileReference
+            {
+                Name = "__content__wknd__us__en__magazine__san-diego-surf.html-en-ko-T-C.xlf",
+                ContentType = "application/xliff+xml"
+            },
+            SourceLocale = "/en",
+            Locale = "/ko",
+            IgnoreReferenceContentErrors = true
+        };
+
         // Act
         var response = await actions.UploadContent(request);
 

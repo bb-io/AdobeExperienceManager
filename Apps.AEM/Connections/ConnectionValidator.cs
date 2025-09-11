@@ -2,7 +2,6 @@ using Apps.AEM.Api;
 using Apps.AEM.Utils;
 using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Connections;
-using RestSharp;
 
 namespace Apps.AEM.Connections;
 
@@ -15,11 +14,15 @@ public class ConnectionValidator: IConnectionValidator
         try
         {
             var client = new ApiClient(authenticationCredentialsProviders);
-            var request = new RestRequest("/content/services/bb-aem-connector/content/events.json", Method.Get);
-            request.AddQueryParameter("startDate", DateTime.UtcNow.ToString(ContentSearch.SearchDateFormat));
-            request.AddQueryParameter("limit", 1);
+
+            var request = ContentSearch.BuildRequest(new()
+            {
+                StartDate = DateTime.UtcNow.AddMinutes(-5),
+                Limit = 1
+            });
 
             var response = await client.ExecuteWithErrorHandling(request);
+
             return new()
             {
                 IsValid = response.IsSuccessful,
