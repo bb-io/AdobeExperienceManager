@@ -72,7 +72,7 @@ For more information on configuring translation rules, see the [official documen
 - **On content created or updated**: Polling event that periodically checks for new or updated content. If any content is found, the event is triggered.
 - **On tag added**: Periodically checks for new content with specified tags. If any content is found, the event is triggered.
 
-> **Note on compatible content**: Blackbird supports all content types in the default page hierarchy: pages, content fragments, experience fragments, assets, etc. Support for 'Guides' and 'DITA' content is in development.
+> **Note on compatible content**: Blackbird supports all content types in the default page hierarchy: pages, content fragments, experience fragments, assets, etc. Support for ‘Guides’ and ‘DITA’ content is in beta mode at the moment.
 
 ## Example
 
