@@ -1,3 +1,4 @@
+using Apps.AEM.Constants;
 using Apps.AEM.Models.Dtos;
 using Apps.AEM.Services;
 using Apps.AEM.Utils;
@@ -6,21 +7,30 @@ using Blackbird.Applications.Sdk.Common.Exceptions;
 using Blackbird.Applications.Sdk.Utils.RestSharp;
 using Newtonsoft.Json;
 using RestSharp;
+using RestSharp.Authenticators;
 
 namespace Apps.AEM.Api;
 
 public class ApiClient(IEnumerable<AuthenticationCredentialsProvider> credentials) : BlackBirdRestClient(new()
     {
         BaseUrl = new Uri(credentials.GetBaseUrl()),
-        ThrowOnAnyError = false
-    })
+        ThrowOnAnyError = false,
+        Authenticator = credentials.FirstOrDefault(c => c.KeyName == CredNames.ConnectionType)?.Value == "cloud"
+            ? null
+            : new HttpBasicAuthenticator(
+                credentials.FirstOrDefault(c => c.KeyName == CredNames.Username)?.Value ?? string.Empty,
+                credentials.FirstOrDefault(c => c.KeyName == CredNames.Username)?.Value ?? string.Empty)
+})
 {
     public override async Task<RestResponse> ExecuteWithErrorHandling(RestRequest request)
     {
         request.AddHeader("Cache-Control", "no-cache");
-        
-        var token = await TokenService.GetAccessTokenAsync(credentials);
-        request.AddHeader("Authorization", $"Bearer {token}");
+
+        if (credentials.FirstOrDefault(c => c.KeyName == CredNames.ConnectionType)?.Value == "cloud")
+        {
+            var token = await TokenService.GetAccessTokenAsync(credentials);
+            request.AddHeader("Authorization", $"Bearer {token}");
+        }
 
         var response = await base.ExecuteWithErrorHandling(request);
         if(response.ContentType == "text/html")

@@ -10,7 +10,8 @@ public class ConnectionDefinition : IConnectionDefinition
     {
         new()
         {
-            Name = "Developer API key",
+            Name = "Developer API key", // cloud, name left intact for keeping current connections working
+            DisplayName = "Cloud (JSON certificate)",
             AuthenticationType = ConnectionAuthenticationType.Undefined,
             ConnectionProperties = new List<ConnectionProperty>
             {
@@ -27,9 +28,48 @@ public class ConnectionDefinition : IConnectionDefinition
                     Sensitive = true
                 }
             }
+        },
+        new()
+        {
+            Name = "On premise (username and password)",
+            DisplayName = "On premise (username and password)",
+            AuthenticationType = ConnectionAuthenticationType.Undefined,
+            ConnectionProperties = new List<ConnectionProperty>
+            {
+                new(CredNames.BaseUrl)
+                {
+                    DisplayName = "Base URL",
+                    Description = "Base URL for the AEM instance. Example: https://author-xxxxx-xxxxx.adobeaemcloud.com",
+                    Sensitive = false
+                },
+                new(CredNames.Username)
+                {
+                    DisplayName = "Username",
+                    Sensitive = false
+                },
+                new(CredNames.Password)
+                {
+                    DisplayName = "Password",
+                    Sensitive = true
+                }
+            }
         }
     };
 
-    public IEnumerable<AuthenticationCredentialsProvider> CreateAuthorizationCredentialsProviders(Dictionary<string, string> values) 
-        => values.Select(x => new AuthenticationCredentialsProvider(x.Key, x.Value)).ToList();
+    public IEnumerable<AuthenticationCredentialsProvider> CreateAuthorizationCredentialsProviders(Dictionary<string, string> values)
+    {
+        var credentials = values.Select(x => new AuthenticationCredentialsProvider(x.Key, x.Value)).ToList();
+
+        var connectionType = values[nameof(ConnectionPropertyGroup)] switch
+        {
+            "On premise (username and password)" => "on_premise",
+            "Developer API key" => "cloud",
+            _ => throw new Exception($"Unknown connection type: {values[nameof(ConnectionPropertyGroup)]}")
+        };
+
+        if (values[nameof(ConnectionPropertyGroup)] == "Developer API key")
+            credentials.Add(new AuthenticationCredentialsProvider(CredNames.ConnectionType, connectionType));
+
+        return credentials;
+    }
 }
