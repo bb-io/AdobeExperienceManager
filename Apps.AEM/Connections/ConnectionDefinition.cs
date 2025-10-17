@@ -6,15 +6,15 @@ namespace Apps.AEM.Connections;
 
 public class ConnectionDefinition : IConnectionDefinition
 {
-    public IEnumerable<ConnectionPropertyGroup> ConnectionPropertyGroups => new List<ConnectionPropertyGroup>
-    {
+    public IEnumerable<ConnectionPropertyGroup> ConnectionPropertyGroups =>
+    [
         new()
         {
-            Name = "Developer API key", // cloud, name left intact for keeping current connections working
+            Name = ConnectionTypes.Cloud,
             DisplayName = "Cloud (JSON certificate)",
             AuthenticationType = ConnectionAuthenticationType.Undefined,
-            ConnectionProperties = new List<ConnectionProperty>
-            {
+            ConnectionProperties =
+            [
                 new(CredNames.BaseUrl) 
                 { 
                     DisplayName = "Base URL", 
@@ -27,19 +27,19 @@ public class ConnectionDefinition : IConnectionDefinition
                     Description = "Integration certificate in JSON format. Can be found in the Developer Console. Example: { \"ok\": true, \"integration\": { \"imsEndpoint\": \"ims-na1.adobelogin.com\", ... } \"statusCode\": 200}",
                     Sensitive = true
                 }
-            }
+            ]
         },
         new()
         {
-            Name = "On premise (username and password)",
+            Name = ConnectionTypes.OnPremise,
             DisplayName = "On premise (username and password)",
             AuthenticationType = ConnectionAuthenticationType.Undefined,
-            ConnectionProperties = new List<ConnectionProperty>
-            {
+            ConnectionProperties =
+            [
                 new(CredNames.BaseUrl)
                 {
                     DisplayName = "Base URL",
-                    Description = "Base URL for the AEM instance. Example: https://author-xxxxx-xxxxx.adobeaemcloud.com",
+                    Description = "Base URL for the AEM instance. Example: https://aem.example.com",
                     Sensitive = false
                 },
                 new(CredNames.Username)
@@ -52,9 +52,9 @@ public class ConnectionDefinition : IConnectionDefinition
                     DisplayName = "Password",
                     Sensitive = true
                 }
-            }
+            ]
         }
-    };
+    ];
 
     public IEnumerable<AuthenticationCredentialsProvider> CreateAuthorizationCredentialsProviders(Dictionary<string, string> values)
     {
@@ -62,13 +62,10 @@ public class ConnectionDefinition : IConnectionDefinition
 
         var connectionType = values[nameof(ConnectionPropertyGroup)] switch
         {
-            "On premise (username and password)" => "on_premise",
-            "Developer API key" => "cloud",
+            var ct when ConnectionTypes.SupportedConnectionTypes.Contains(ct) => ct,
             _ => throw new Exception($"Unknown connection type: {values[nameof(ConnectionPropertyGroup)]}")
         };
-
-        if (values[nameof(ConnectionPropertyGroup)] == "Developer API key")
-            credentials.Add(new AuthenticationCredentialsProvider(CredNames.ConnectionType, connectionType));
+        credentials.Add(new AuthenticationCredentialsProvider(CredNames.ConnectionType, connectionType));
 
         return credentials;
     }
