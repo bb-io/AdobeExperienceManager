@@ -15,7 +15,7 @@ public class ApiClient(IEnumerable<AuthenticationCredentialsProvider> credential
     {
         BaseUrl = new Uri(credentials.GetBaseUrl()),
         ThrowOnAnyError = false,
-        Authenticator = credentials.FirstOrDefault(c => c.KeyName == CredNames.ConnectionType)?.Value == "cloud"
+        Authenticator = credentials.FirstOrDefault(c => c.KeyName == CredNames.ConnectionType)?.Value == ConnectionTypes.Cloud
             ? null
             : new HttpBasicAuthenticator(
                 credentials.FirstOrDefault(c => c.KeyName == CredNames.Username)?.Value ?? string.Empty,
@@ -26,7 +26,7 @@ public class ApiClient(IEnumerable<AuthenticationCredentialsProvider> credential
     {
         request.AddHeader("Cache-Control", "no-cache");
 
-        if (credentials.FirstOrDefault(c => c.KeyName == CredNames.ConnectionType)?.Value == "cloud")
+        if (credentials.FirstOrDefault(c => c.KeyName == CredNames.ConnectionType)?.Value == ConnectionTypes.Cloud)
         {
             var token = await TokenService.GetAccessTokenAsync(credentials);
             request.AddHeader("Authorization", $"Bearer {token}");
