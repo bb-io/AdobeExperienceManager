@@ -1,7 +1,16 @@
 {
-  "ConnectionDefinition": {
-    "base_url": "",
-    "integration_json_certificate": ""
-  },
+  "ConnectionDefinition": [
+    {
+      "connection_type": "Developer API key",
+      "base_url": "https://author-.adobeaemcloud.com",
+      "integration_json_certificate": "{   \"ok\": true,   ...,   \"statusCode\": 200 }"
+    },
+    {
+      "connection_type": "On premise (username and password)",
+      "base_url": "https://aem-dev.example.com/",
+      "username": "",
+      "password": ""
+    }
+  ],
   "TestFolder": "TestFiles"
 }

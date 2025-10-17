@@ -1,20 +1,25 @@
 using Apps.AEM.Events;
 using Apps.AEM.Events.Models;
+using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.Sdk.Common.Polling;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json;
+using System.Reflection;
 using Tests.AEM.Base;
 
-namespace Tests.AEM.Events;
+namespace Tests.AEM;
 
 [TestClass]
 public class PagePollingListTests : TestBase
 {
-    private ContentPollingList _pollingList => new ContentPollingList(InvocationContext);
+    // can't use parent method directly in DynamicData decorator as studio can't see it and shows a warning
+    public static string? GetConnectionTypeName(MethodInfo _, object[]? data) => GetConnectionTypeFromDynamicData(data);
 
     [TestMethod]
-    public async Task OnPagesCreatedOrUpdatedAsync_WithNullMemory_ShouldReturnCorrectResponse()
+    [DynamicData(nameof(AllInvocationContexts), DynamicDataDisplayName = nameof(GetConnectionTypeName))]
+    public async Task OnPagesCreatedOrUpdatedAsync_WithNullMemory_ShouldReturnCorrectResponse(InvocationContext context)
     {
+        var pollingList = new ContentPollingList(context);
+
         // Arrange
         var request = new PollingEventRequest<ContentMemory>
         {
@@ -24,7 +29,7 @@ public class PagePollingListTests : TestBase
         var optionalRequest = new OnContentCreatedOrUpdatedRequest();
 
         // Act
-        var response = await _pollingList.OnContentCreatedOrUpdated(request, optionalRequest);
+        var response = await pollingList.OnContentCreatedOrUpdated(request, optionalRequest);
 
         // Assert
         Assert.IsNotNull(response);
@@ -32,8 +37,8 @@ public class PagePollingListTests : TestBase
         Assert.IsNull(response.Result);
         
         // Log for debugging
-        Console.WriteLine($"Response: {JsonConvert.SerializeObject(response, Formatting.Indented)}");
-        Console.WriteLine($"Last triggered time: {response.Memory.LastTriggeredTime}");
+        TestContext.WriteLine($"Response: {JsonConvert.SerializeObject(response, Formatting.Indented)}");
+        TestContext.WriteLine($"Last triggered time: {response.Memory.LastTriggeredTime}");
         
         Assert.IsFalse(response.FlyBird, "FlyBird should be false for first run with null memory");
         
@@ -50,22 +55,25 @@ public class PagePollingListTests : TestBase
         };
         
         // Act again with memory
-        var secondResponse = await _pollingList.OnContentCreatedOrUpdated(secondRequest, optionalRequest);
+        var secondResponse = await pollingList.OnContentCreatedOrUpdated(secondRequest, optionalRequest);
         
         // Log second response
-        Console.WriteLine($"Second Response: {JsonConvert.SerializeObject(secondResponse, Formatting.Indented)}");
+        TestContext.WriteLine($"Second Response: {JsonConvert.SerializeObject(secondResponse, Formatting.Indented)}");
         if (secondResponse.Result != null)
         {
-            Console.WriteLine($"Found pages: {secondResponse.Result.TotalCount}");
+            TestContext.WriteLine($"Found pages: {secondResponse.Result.TotalCount}");
         }
         
         // The FlyBird value will depend on whether any pages were created/updated during the test
-        Console.WriteLine($"FlyBird: {secondResponse.FlyBird}");
+        TestContext.WriteLine($"FlyBird: {secondResponse.FlyBird}");
     }
 
     [TestMethod]
-    public async Task OnTagAddedAsync_WithNullMemory_ShouldReturnCorrectResponse()
+    [DynamicData(nameof(AllInvocationContexts), DynamicDataDisplayName = nameof(GetConnectionTypeName))]
+    public async Task OnTagAddedAsync_WithNullMemory_ShouldReturnCorrectResponse(InvocationContext context)
     {
+        var pollingList = new ContentPollingList(context);
+
         // Arrange
         var request = new PollingEventRequest<TagsMemory>
         {
@@ -75,7 +83,7 @@ public class PagePollingListTests : TestBase
         var optionalRequest = new OnTagsAddedRequest();
 
         // Act
-        var response = await _pollingList.OnTagAddedAsync(request, optionalRequest);
+        var response = await pollingList.OnTagAddedAsync(request, optionalRequest);
 
         // Assert
         Assert.IsFalse(response.FlyBird, "FlyBird should be false for first run with null memory");
@@ -84,15 +92,18 @@ public class PagePollingListTests : TestBase
     }
 
     [TestMethod]
-    public async Task OnTagAddedAsync_WithInitialMemory_ShouldWork()
+    [DynamicData(nameof(AllInvocationContexts), DynamicDataDisplayName = nameof(GetConnectionTypeName))]
+    public async Task OnTagAddedAsync_WithInitialMemory_ShouldWork(InvocationContext context)
     {
+        var pollingList = new ContentPollingList(context);
+
         // Arrange
         var testRunTime = DateTime.UtcNow;
         var request = new PollingEventRequest<TagsMemory>
         {
             Memory = new()
             {
-                LastTriggeredTime = testRunTime.AddDays(-90), // 90 days in the past as test instance data might be old
+                LastTriggeredTime = testRunTime.AddDays(-360), // 360 days in the past as test instance data might be old
                 ContentWithTagsObserved = new HashSet<string>() // { "/content/test-site/en/Homepage" }
             },
             PollingTime = testRunTime
@@ -104,10 +115,10 @@ public class PagePollingListTests : TestBase
         };
 
         // Act
-        var response = await _pollingList.OnTagAddedAsync(request, optionalRequest);
+        var response = await pollingList.OnTagAddedAsync(request, optionalRequest);
 
         // Assert
-        Console.WriteLine($"Response: {JsonConvert.SerializeObject(response.Result, Formatting.Indented)}");
+        TestContext.WriteLine($"Response: {JsonConvert.SerializeObject(response.Result, Formatting.Indented)}");
 
         Assert.IsTrue(response.FlyBird);
         Assert.IsNotNull(response.Memory);

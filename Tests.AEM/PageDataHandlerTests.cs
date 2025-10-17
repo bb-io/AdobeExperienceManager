@@ -1,6 +1,6 @@
 using Apps.AEM.Handlers;
 using Blackbird.Applications.Sdk.Common.Dynamic;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Blackbird.Applications.Sdk.Common.Invocation;
 using Tests.AEM.Base;
 
 namespace Tests.AEM;
@@ -8,7 +8,7 @@ namespace Tests.AEM;
 [TestClass]
 public class PageDataHandlerTests : BaseDataHandlerTests
 {
-    protected override IAsyncDataSourceItemHandler DataHandler => new PageDataHandler(InvocationContext);
+    protected override IAsyncDataSourceItemHandler CreateDataHandler(InvocationContext context) => new PageDataHandler(context);
 
     protected override string SearchString => "Surf";
 }

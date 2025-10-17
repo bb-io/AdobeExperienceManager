@@ -1,8 +1,9 @@
 using Apps.AEM.Actions;
 using Apps.AEM.Models.Requests;
 using Blackbird.Applications.Sdk.Common.Files;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Blackbird.Applications.Sdk.Common.Invocation;
 using Newtonsoft.Json;
+using System.Reflection;
 using Tests.AEM.Base;
 
 namespace Tests.AEM;
@@ -10,11 +11,15 @@ namespace Tests.AEM;
 [TestClass]
 public class ContentActionsTests : TestBase
 {
+    // can't use parent method directly in DynamicData decorator as studio can't see it and shows a warning
+    public static string? GetConnectionTypeName(MethodInfo _, object[]? data) => GetConnectionTypeFromDynamicData(data);
+
     [TestMethod]
-    public async Task SearchContent_NoParameters_ShouldReturnContent()
+    [DynamicData(nameof(AllInvocationContexts), DynamicDataDisplayName = nameof(GetConnectionTypeName))]
+    public async Task SearchContent_NoParameters_ShouldReturnContent(InvocationContext context)
     {
         // Arrange
-        var actions = new ContentActions(InvocationContext, FileManager);
+        var actions = new ContentActions(context, FileManager);
         
         // Act
         var result = await actions.SearchContent(new SearchContentRequest()
@@ -24,18 +29,19 @@ public class ContentActionsTests : TestBase
         
         // Assert
         Assert.IsTrue(result.Content.Any(), "No content items were returned");
-        Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
+        TestContext.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
     }
     
     [TestMethod]
-    public async Task SearchContent_WithRootPath_ShouldReturnFilteredContent()
+    [DynamicData(nameof(AllInvocationContexts), DynamicDataDisplayName = nameof(GetConnectionTypeName))]
+    public async Task SearchContent_WithRootPath_ShouldReturnFilteredContent(InvocationContext context)
     {
         // Arrange
-        var actions = new ContentActions(InvocationContext, FileManager);
+        var actions = new ContentActions(context, FileManager);
         var request = new SearchContentRequest 
         {
-            RootPath = "/content/wknd/us/en/magazine/",
-            StartDate = DateTime.UtcNow.AddDays(-90),
+            RootPath = "/content/experience-fragments/wknd/language-masters/fr/site/footer",
+            StartDate = DateTime.UtcNow.AddDays(-360),
         };
         
         // Act
@@ -45,14 +51,15 @@ public class ContentActionsTests : TestBase
         Assert.IsTrue(result.Content.Any(), "No content items were returned");
         Assert.IsTrue(result.Content.All(p => p.ContentId.StartsWith(request.RootPath)), 
             "Some returned content items don't match the specified root path");
-        Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
+        TestContext.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
     }
 
     [TestMethod]
-    public async Task DownloadContent_Interoperable_WithValidPath_ShouldReturnFileReference()
+    [DynamicData(nameof(AllInvocationContexts), DynamicDataDisplayName = nameof(GetConnectionTypeName))]
+    public async Task DownloadContent_Interoperable_WithValidPath_ShouldReturnFileReference(InvocationContext context)
     {
         // Arrange
-        var actions = new ContentActions(InvocationContext, FileManager);
+        var actions = new ContentActions(context, FileManager);
         var request = new DownloadContentRequest
         {
             ContentId = "/content/wknd/language-masters/en/magazine/western-australia",
@@ -73,15 +80,16 @@ public class ContentActionsTests : TestBase
         Assert.IsFalse(string.IsNullOrEmpty(result.Content.Name), "File name should not be empty");
         Assert.AreEqual("text/html", result.Content.ContentType, "File content type should be text/html");
         
-        Console.WriteLine($"Generated HTML file: {result.Content.Name}");
-        Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
+        TestContext.WriteLine($"Generated HTML file: {result.Content.Name}");
+        TestContext.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
     }
 
     [TestMethod]
-    public async Task DownloadContent_Original_WithValidPath_ShouldReturnFileReference()
+    [DynamicData(nameof(AllInvocationContexts), DynamicDataDisplayName = nameof(GetConnectionTypeName))]
+    public async Task DownloadContent_Original_WithValidPath_ShouldReturnFileReference(InvocationContext context)
     {
         // Arrange
-        var actions = new ContentActions(InvocationContext, FileManager);
+        var actions = new ContentActions(context, FileManager);
         var request = new DownloadContentRequest
         {
             ContentId = "/content/wknd/language-masters/en/magazine/western-australia",
@@ -98,14 +106,15 @@ public class ContentActionsTests : TestBase
         Assert.IsFalse(string.IsNullOrEmpty(result.Content.Name), "File name should not be empty");
         Assert.AreEqual("application/json", result.Content.ContentType, "File content type should be application/json");
         
-        Console.WriteLine($"Generated JSON file: {result.Content.Name}");
+        TestContext.WriteLine($"Generated JSON file: {result.Content.Name}");
     }
 
     [TestMethod]
-    public async Task UploadContent_WithInteroperableHTMLInput_ShouldSucceed()
+    [DynamicData(nameof(AllInvocationContexts), DynamicDataDisplayName = nameof(GetConnectionTypeName))]
+    public async Task UploadContent_WithInteroperableHTMLInput_ShouldSucceed(InvocationContext context)
     {
         // Arrange
-        var actions = new ContentActions(InvocationContext, FileManager);
+        var actions = new ContentActions(context, FileManager);
         var request = new UploadContentRequest
         {
             Content = new FileReference
@@ -123,14 +132,15 @@ public class ContentActionsTests : TestBase
 
         // Assert
         Assert.IsNotNull(response, "Response should not be null");
-        System.Console.WriteLine(JsonConvert.SerializeObject(response, Formatting.Indented));
+        TestContext.WriteLine(JsonConvert.SerializeObject(response, Formatting.Indented));
     }
 
     [TestMethod]
-    public async Task UploadContent_WithInteroperableXliffInput_ShouldSucceed()
+    [DynamicData(nameof(AllInvocationContexts), DynamicDataDisplayName = nameof(GetConnectionTypeName))]
+    public async Task UploadContent_WithInteroperableXliffInput_ShouldSucceed(InvocationContext context)
     {
         // Arrange
-        var actions = new ContentActions(InvocationContext, FileManager);
+        var actions = new ContentActions(context, FileManager);
         var request = new UploadContentRequest
         {
             Content = new FileReference
@@ -148,14 +158,15 @@ public class ContentActionsTests : TestBase
 
         // Assert
         Assert.IsNotNull(response, "Response should not be null");
-        System.Console.WriteLine(JsonConvert.SerializeObject(response, Formatting.Indented));
+        TestContext.WriteLine(JsonConvert.SerializeObject(response, Formatting.Indented));
     }
 
     [TestMethod]
-    public async Task UploadContent_WithValidOriginalInput_ShouldSucceed()
+    [DynamicData(nameof(AllInvocationContexts), DynamicDataDisplayName = nameof(GetConnectionTypeName))]
+    public async Task UploadContent_WithValidOriginalInput_ShouldSucceed(InvocationContext context)
     {
         // Arrange
-        var actions = new ContentActions(InvocationContext, FileManager);
+        var actions = new ContentActions(context, FileManager);
         var request = new UploadContentRequest
         {
             Content = new FileReference
@@ -173,6 +184,6 @@ public class ContentActionsTests : TestBase
 
         // Assert
         Assert.IsNotNull(response, "Response should not be null");
-        System.Console.WriteLine(JsonConvert.SerializeObject(response, Formatting.Indented));
+        TestContext.WriteLine(JsonConvert.SerializeObject(response, Formatting.Indented));
     }
 }

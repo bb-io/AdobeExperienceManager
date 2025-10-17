@@ -1,12 +1,12 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <TargetFramework>net8.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <Product>AEM Cloud</Product>
+        <Product>AEM</Product>
         <Description>AEM (Adobe Experience Manager) is a Content Management System (CMS) that allows users and companies to easily build websites, apps, and manage web pages and content. AEM is used by developers and marketers to organize and distribute content across digital channels.</Description>
-        <Version>1.2.8</Version>
+        <Version>1.3.0</Version>
         <PackageId>Apps.AEM</PackageId>
         <AssemblyName>Apps.AEM</AssemblyName>
     </PropertyGroup>

@@ -1,24 +1,32 @@
 using Blackbird.Applications.Sdk.Common.Dynamic;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Blackbird.Applications.Sdk.Common.Invocation;
+using System.Reflection;
 
 namespace Tests.AEM.Base;
 
 public abstract class BaseDataHandlerTests : TestBase
 {
-    protected abstract IAsyncDataSourceItemHandler DataHandler { get; }
+    protected abstract IAsyncDataSourceItemHandler CreateDataHandler(InvocationContext context);
     protected abstract string SearchString { get; }
-    protected virtual bool CanBeEmpty => false; 
+    protected virtual bool CanBeEmpty => false;
+
+    // can't use parent method directly in DynamicData decorator as studio can't see it and shows a warning
+    public static string? GetConnectionTypeName(MethodInfo _, object[]? data) => GetConnectionTypeFromDynamicData(data);
 
     [TestMethod]
-    public virtual async Task GetDataAsync_WithoutSearchString_ShouldReturnNonEmptyCollection()
+    [DynamicData(nameof(AllInvocationContexts), DynamicDataDisplayName = nameof(GetConnectionTypeName))]
+    public virtual async Task GetDataAsync_WithoutSearchString_ShouldReturnNonEmptyCollection(InvocationContext context)
     {
-        await TestDataHandlerAsync(DataHandler);
+        var dataHandler = CreateDataHandler(context);
+        await TestDataHandlerAsync(dataHandler);
     }
 
     [TestMethod]
-    public virtual async Task GetDataAsync_WithSearchString_ShouldReturnNonEmptyCollection()
+    [DynamicData(nameof(AllInvocationContexts), DynamicDataDisplayName = nameof(GetConnectionTypeName))]
+    public virtual async Task GetDataAsync_WithSearchString_ShouldReturnNonEmptyCollection(InvocationContext context)
     {
-        await TestDataHandlerAsync(DataHandler, SearchString);
+        var dataHandler = CreateDataHandler(context);
+        await TestDataHandlerAsync(dataHandler, SearchString);
     }
 
     private async Task TestDataHandlerAsync(IAsyncDataSourceItemHandler dataHandler, string? searchString = null)
@@ -42,12 +50,12 @@ public abstract class BaseDataHandlerTests : TestBase
         LogItems(result);
     }
 
-    private static void LogItems(IEnumerable<DataSourceItem> items)
+    private void LogItems(IEnumerable<DataSourceItem> items)
     {
-        Console.WriteLine($"Total items: {items.Count()}");
+        TestContext.WriteLine($"Total items: {items.Count()}");
         foreach (var item in items)
         {
-            Console.WriteLine($"ID: {item.Value}, Name: {item.DisplayName}");
+            TestContext.WriteLine($"ID: {item.Value}, Name: {item.DisplayName}");
         }
     }
 }
