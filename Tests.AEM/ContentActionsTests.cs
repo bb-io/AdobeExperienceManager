@@ -11,8 +11,6 @@ namespace Tests.AEM;
 [TestClass]
 public class ContentActionsTests : TestBase
 {
-
-
     // can't use parent method directly in DynamicData decorator as studio can't see it and shows a warning
     public static string? GetConnectionTypeName(MethodInfo _, object[]? data) => GetConnectionTypeFromDynamicData(data);
 
