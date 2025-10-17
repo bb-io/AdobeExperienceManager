@@ -8,10 +8,27 @@ namespace Apps.AEM.Utils;
 
 public static class AuthenticationCredentialsProviderExtensions
 {
+    public static string GetConnectionType(this IEnumerable<AuthenticationCredentialsProvider> credentialsProviders)
+    {
+        return GetCredentialValue(credentialsProviders, CredNames.ConnectionType, "Connection type");
+    }
+
     public static string GetBaseUrl(this IEnumerable<AuthenticationCredentialsProvider> credentialsProviders)
     {
         var baseUrl = GetCredentialValue(credentialsProviders, CredNames.BaseUrl, "Base URL");
         return baseUrl.TrimEnd('/');
+    }
+
+    public static string GetUsername(this IEnumerable<AuthenticationCredentialsProvider> credentialsProviders)
+    {
+        var username = GetCredentialValue(credentialsProviders, CredNames.Username, "Username");
+        return username;
+    }
+
+    public static string GetPassword(this IEnumerable<AuthenticationCredentialsProvider> credentialsProviders)
+    {
+        var password = GetCredentialValue(credentialsProviders, CredNames.Password, "Password");
+        return password;
     }
 
     public static string GetJsonCertificate(this IEnumerable<AuthenticationCredentialsProvider> credentialsProviders)

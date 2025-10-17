@@ -1,3 +1,4 @@
+using Apps.AEM.Utils;
 using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Microsoft.Extensions.Configuration;
@@ -5,21 +6,52 @@ using Microsoft.Extensions.Configuration;
 namespace Tests.AEM.Base;
 public class TestBase
 {
-    public IEnumerable<AuthenticationCredentialsProvider> Creds { get; set; }
-    public InvocationContext InvocationContext { get; set; }
-    public FileManager FileManager { get; set; }
+    public List<IEnumerable<AuthenticationCredentialsProvider>> CredentialGroups { get; init; }
 
+    public List<InvocationContext> InvocationContexts { get; init; }
+
+    public FileManager FileManager { get; init; }
+
+    public TestContext TestContext { get; set; }
+
+    #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
     protected TestBase()
     {
         var config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
-        Creds = config.GetSection("ConnectionDefinition").GetChildren()
-            .Select(x => new AuthenticationCredentialsProvider(x.Key, x.Value!)).ToList();
 
-        InvocationContext = new InvocationContext
+        CredentialGroups = config
+            .GetSection("ConnectionDefinition").GetChildren()
+            .Select(section =>
+                section.GetChildren()
+               .Select(child => new AuthenticationCredentialsProvider(child.Key, child.Value!))
+            ).ToList();
+
+        InvocationContexts = [];
+        foreach (var credentialGroup in CredentialGroups)
         {
-            AuthenticationCredentialsProviders = Creds,
-        };
+            InvocationContexts.Add(new InvocationContext
+            {
+                AuthenticationCredentialsProviders = credentialGroup
+            });
+        }
 
         FileManager = new FileManager();
+    }
+#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
+
+    public static IEnumerable<object[]> AllInvocationContexts
+    {
+        get
+        {
+            var testBase = new TestBase();
+            return testBase.InvocationContexts.Select(ctx => new object[] { ctx });
+        }
+    }
+
+    public static string? GetConnectionTypeFromDynamicData(object[]? data)
+    {
+        var context = data?[0] as InvocationContext
+             ?? throw new ArgumentNullException(nameof(data));
+        return "Connection type: " + context.AuthenticationCredentialsProviders.GetConnectionType();
     }
 }
