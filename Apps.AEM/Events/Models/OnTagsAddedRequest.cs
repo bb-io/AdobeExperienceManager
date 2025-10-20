@@ -12,7 +12,7 @@ public class OnTagsAddedRequest
     public IEnumerable<string> Tags { get; set; } = [];
 
     [Display("Root path")]
-    public string? RootPath { get; set; }
+    public string RootPath { get; set; } = string.Empty;
 
     [Display("Root path includes")]
     public IEnumerable<string>? RootPathIncludes { get; set; }

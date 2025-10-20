@@ -8,7 +8,7 @@ namespace Apps.AEM.Events.Models;
 public class OnContentCreatedOrUpdatedRequest
 {
     [Display("Root path")]
-    public string? ContentId { get; set; }
+    public string ContentId { get; set; } = string.Empty;
 
     [Display("Root path includes")]
     public IEnumerable<string>? ContentIdIncludes { get; set; }
