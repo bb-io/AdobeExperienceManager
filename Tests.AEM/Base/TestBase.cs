@@ -2,6 +2,7 @@ using Apps.AEM.Utils;
 using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Microsoft.Extensions.Configuration;
+using System.Text.Json;
 
 namespace Tests.AEM.Base;
 public class TestBase
@@ -12,9 +13,8 @@ public class TestBase
 
     public FileManager FileManager { get; init; }
 
-    public TestContext TestContext { get; set; }
+    public TestContext? TestContext { get; set; }
 
-    #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
     protected TestBase()
     {
         var config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
@@ -37,7 +37,6 @@ public class TestBase
 
         FileManager = new FileManager();
     }
-#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
 
     public static IEnumerable<object[]> AllInvocationContexts
     {
@@ -53,5 +52,12 @@ public class TestBase
         var context = data?[0] as InvocationContext
              ?? throw new ArgumentNullException(nameof(data));
         return "Connection type: " + context.AuthenticationCredentialsProviders.GetConnectionType();
+    }
+
+    private static JsonSerializerOptions PrintResultOptions => new() { WriteIndented = true };
+
+    public void PrintResult(object? obj)
+    {
+        TestContext?.WriteLine(JsonSerializer.Serialize(obj, PrintResultOptions));
     }
 }
