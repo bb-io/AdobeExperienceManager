@@ -6,12 +6,11 @@ using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Exceptions;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
-using Blackbird.Applications.SDK.Extensions.FileManagement.Models;
 using RestSharp;
 
 namespace Apps.AEM.Actions;
 
-[ActionList("Content")]
+[ActionList("Assets")]
 public class AssetActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) : Invocable(invocationContext)
 {
     [Action("Search assets", Description = "Search main assets using specific criteria.")]
