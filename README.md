@@ -95,7 +95,7 @@ In this example, the component node will have the following key information:
 -   **Resource Type:** `your-org/components/announcement`
 -   **Property to translate:** `tagline`
 
-Navigate to your project's translation rules and add a new rule under `/content`:
+Navigate to your project's translation rules in the `/content` section, click "Add component" and add new component using `sling:resourceType` and propery name. Make sure to click Save button once you've finished configuration.
 
 ![AEM translation rules for custom components](docs/images/aem_translation_rules_for_custom_components.png)
 
