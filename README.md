@@ -81,6 +81,24 @@ For more information on configuring translation rules, see the [official documen
 
 ![AEM translation rules](docs/images/aem_translation_rules.png)
 
+### Adding support for custom components
+
+While the general translation rules cover many standard component properties, they don't automatically know about the specific fields in your custom-built AEM components. To ensure your custom content is translated, you must add specific rules for your component's resource type.
+
+Let's use an example. Suppose you have a custom "Announcement" component, and you need to translate its `tagline` field.
+
+Find the `sling:resourceType` of your component and the exact name of the property you want to translate. You can do this using CRXDE Lite by navigating to an instance of the component on a page.
+
+In this example, the component node will have the following key information:
+
+-   **Path:** `/content/your-org/.../page-you-want-to-translate`
+-   **Resource Type:** `your-org/components/announcement`
+-   **Property to translate:** `tagline`
+
+Navigate to your project's translation rules and add a new rule under `/content`:
+
+![AEM translation rules for custom components](docs/images/aem_translation_rules_for_custom_components.png)
+
 ## Actions
 
 - **Search content**: Search for content based on provided criteria.
