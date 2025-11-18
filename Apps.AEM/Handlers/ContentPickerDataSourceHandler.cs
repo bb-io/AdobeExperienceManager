@@ -61,11 +61,29 @@ public class ContentPickerDataSourceHandler(InvocationContext invocationContext)
     private static IEnumerable<FileDataItem> BuildFileDataItems(string currentPath, List<ContentResponse> contentItems)
     {
         var result = new List<FileDataItem>();
-        var pathSegments = new HashSet<string>();
+        var processedSegments = new HashSet<string>();
 
         var normalizedCurrentPath = currentPath.TrimEnd('/');
-        var depth = normalizedCurrentPath.Split('/', StringSplitOptions.RemoveEmptyEntries).Length;
 
+        // First, collect all direct children paths
+        var directChildrenPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var item in contentItems)
+        {
+            var itemPath = item.ContentId.TrimEnd('/');
+            if (!itemPath.StartsWith(normalizedCurrentPath + "/", StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            var relativePath = itemPath.Substring(normalizedCurrentPath.Length + 1);
+            var segments = relativePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+
+            if (segments.Length == 0)
+                continue;
+
+            var firstSegmentPath = normalizedCurrentPath + "/" + segments[0];
+            directChildrenPaths.Add(firstSegmentPath);
+        }
+
+        // Now determine which direct children are folders vs files
         foreach (var item in contentItems)
         {
             var itemPath = item.ContentId.TrimEnd('/');
@@ -81,32 +99,38 @@ public class ContentPickerDataSourceHandler(InvocationContext invocationContext)
             var firstSegment = segments[0];
             var segmentPath = normalizedCurrentPath + "/" + firstSegment;
 
-            if (segments.Length > 1)
+            // Skip if already processed
+            if (processedSegments.Contains(firstSegment))
+                continue;
+
+            processedSegments.Add(firstSegment);
+
+            // Check if this path is a folder by seeing if any other items have paths that start with it
+            var isFolder = contentItems.Any(otherItem =>
             {
-                if (!pathSegments.Contains(firstSegment))
+                var otherPath = otherItem.ContentId.TrimEnd('/');
+                return otherPath.StartsWith(segmentPath + "/", StringComparison.OrdinalIgnoreCase);
+            });
+
+            if (isFolder)
+            {
+                result.Add(new Folder
                 {
-                    pathSegments.Add(firstSegment);
-                    result.Add(new Folder
-                    {
-                        Id = segmentPath,
-                        DisplayName = firstSegment,
-                        IsSelectable = false
-                    });
-                }
+                    Id = segmentPath,
+                    DisplayName = firstSegment,
+                    IsSelectable = false
+                });
             }
             else
             {
-                if (!pathSegments.Contains(firstSegment))
+                // This is a file (content item)
+                result.Add(new FileItem
                 {
-                    pathSegments.Add(firstSegment);
-                    result.Add(new FileItem
-                    {
-                        Id = item.ContentId,
-                        DisplayName = string.IsNullOrEmpty(item.Title) ? firstSegment : item.Title,
-                        Date = item.Created,
-                        IsSelectable = true
-                    });
-                }
+                    Id = item.ContentId,
+                    DisplayName = string.IsNullOrEmpty(item.Title) ? firstSegment : item.Title,
+                    Date = item.Created,
+                    IsSelectable = true
+                });
             }
         }
 

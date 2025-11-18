@@ -67,7 +67,7 @@ public class ContentPickerDataSourceHandlerTests : TestBase
     {
         // Arrange
         var handler = new ContentPickerDataSourceHandler(context);
-        var folderId = "/content/wknd/language-masters/en";
+        var folderId = "/content/wknd";
 
         // Act
         var result = await handler.GetFolderContentAsync(new FolderContentDataSourceContext
