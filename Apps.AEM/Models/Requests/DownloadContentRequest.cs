@@ -1,15 +1,15 @@
 using Apps.AEM.Handlers;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Dictionaries;
-using Blackbird.Applications.Sdk.Common.Dynamic;
 using Blackbird.Applications.SDK.Blueprints.Handlers;
 using Blackbird.Applications.SDK.Blueprints.Interfaces.CMS;
+using Blackbird.Applications.SDK.Extensions.FileManagement.Models.FileDataSourceItems;
 
 namespace Apps.AEM.Models.Requests;
 public class DownloadContentRequest : IDownloadContentInput
 {
     [Display("Content path", Description = "Content path to be used in the request.")]
-    [DataSource(typeof(PageDataHandler))]
+    [FileDataSource(typeof(ContentPickerDataSourceHandler))]
     public string ContentId { get; set; } = string.Empty;
 
     [Display("Include reference content")]
