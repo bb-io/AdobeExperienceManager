@@ -1,8 +1,8 @@
 using Apps.AEM.Handlers;
 using Blackbird.Applications.Sdk.Common;
-using Blackbird.Applications.Sdk.Common.Dynamic;
 using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.SDK.Blueprints.Interfaces.CMS;
+using Blackbird.Applications.SDK.Extensions.FileManagement.Models.FileDataSourceItems;
 
 namespace Apps.AEM.Models.Requests;
 public class UploadContentRequest : IUploadContentInput
@@ -17,7 +17,7 @@ public class UploadContentRequest : IUploadContentInput
     public string Locale { get; set; } = string.Empty;
 
     [Display("Overwrite main content path", Description = "Specify source content path to be modified with source to target language replacement (this input will overwrite main or 'root' path from content file). Useful for testing as target content could be created in a different location. Can be only used with 'Skip references' input set to 'true'.")]
-    [DataSource(typeof(PageDataHandler))]
+    [FileDataSource(typeof(ContentPickerDataSourceHandler))]
     public string? ContentId { get; set; } = string.Empty;
 
     [Display("Skip references", Description = "When set to true, references won't be updated.")]
