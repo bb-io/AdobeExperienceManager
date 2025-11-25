@@ -27,7 +27,8 @@ public class ContentPickerDataSourceHandler(InvocationContext invocationContext)
         };
 
         var currentPath = "";
-        foreach (var part in pathParts.Skip(1)) // Skip "content"
+        // Skip "content" and last part
+        foreach (var part in pathParts.Skip(1).Take(pathParts.Length - 2))
         {
             currentPath += "/" + part;
             breadcrumbs.Add(new FolderPathItem 

@@ -26,7 +26,8 @@ public class AssetPickerDataSourceHandler(InvocationContext invocationContext) :
         };
 
         var currentPath = "";
-        foreach (var part in pathParts.Skip(2)) // Skip "content" and "dam"
+        // Skip "content" and "dam" and last part
+        foreach (var part in pathParts.Skip(2).Take(pathParts.Length - 3))
         {
             currentPath += "/" + part;
             breadcrumbs.Add(new FolderPathItem 

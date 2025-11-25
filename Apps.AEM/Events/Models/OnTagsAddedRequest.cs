@@ -2,6 +2,7 @@ using Apps.AEM.Handlers;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Dictionaries;
 using Blackbird.Applications.Sdk.Common.Dynamic;
+using Blackbird.Applications.SDK.Extensions.FileManagement.Models.FileDataSourceItems;
 
 namespace Apps.AEM.Events.Models;
 
@@ -11,7 +12,7 @@ public class OnTagsAddedRequest
     [DataSource(typeof(TagDataHandler))]
     public IEnumerable<string> Tags { get; set; } = [];
 
-    [Display("Root path")]
+    [Display("Root path"), FileDataSource(typeof(ContentPickerDataSourceHandler))]
     public string RootPath { get; set; } = string.Empty;
 
     [Display("Root path includes")]
