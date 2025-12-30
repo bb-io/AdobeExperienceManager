@@ -1,4 +1,5 @@
 ﻿using Apps.AEM.Models.ApiPayloads;
+using Apps.AEM.Models.Dtos;
 using Apps.AEM.Models.Requests;
 using Apps.AEM.Models.Responses;
 using Blackbird.Applications.Sdk.Common;
@@ -80,5 +81,45 @@ public class AssetActions(InvocationContext invocationContext, IFileManagementCl
                 response.ContentType ?? "application/octet-stream",
                 input.Path.Split('/').Last())
         };
+    }
+
+    [Action("Get asset tags", Description = "Get the tags for a specific asset.")]
+    public async Task<GetAssetTagsResponse> GetAssetTags([ActionParameter] AssetPathRequest input)
+    {
+        if (!input.Path.StartsWith("/content/dam/"))
+            throw new PluginMisconfigurationException("Asset path must start with /content/dam/");
+
+        var apiPath = input.Path.Replace("/content/dam/", "/api/assets/", StringComparison.OrdinalIgnoreCase);
+
+        var request = new RestRequest($"{apiPath}.json", Method.Get);
+        var response = await Client.ExecuteWithErrorHandling<AssetMetadataDto>(request);
+
+        return new GetAssetTagsResponse(response?.Properties?.CqTags ?? []);
+    }
+
+    [Action("Update asset tags", Description = "Update the tags for a specific asset.")]
+    public async Task UpdateAssetTags(
+        [ActionParameter] AssetPathRequest path,
+        [ActionParameter] UpdateAssetTagsRequest input)
+    {
+        if (!path.Path.StartsWith("/content/dam/"))
+            throw new PluginMisconfigurationException("Asset path must start with /content/dam/");
+
+        var apiPath = path.Path.Replace("/content/dam/", "/api/assets/", StringComparison.OrdinalIgnoreCase);
+        var request = new RestRequest(apiPath, Method.Put);
+
+        var body = new
+        {
+            @class = new[] { "assets/asset" },
+            properties = new
+            {
+                metadata = new Dictionary<string, object>
+                {
+                    { "cq:tags", input.Tags }
+                }
+            }
+        };
+        request.AddJsonBody(body);
+        await Client.ExecuteWithErrorHandling(request);
     }
 }
