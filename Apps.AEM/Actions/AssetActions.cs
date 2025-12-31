@@ -122,4 +122,22 @@ public class AssetActions(InvocationContext invocationContext, IFileManagementCl
         request.AddJsonBody(body);
         await Client.ExecuteWithErrorHandling(request);
     }
+
+    [Action("Remove asset tags", Description = "Remove specific tags from an asset.")]
+    public async Task RemoveAssetTags(
+        [ActionParameter] AssetPathRequest path,
+        [ActionParameter] RemoveAssetTagsRequest input)
+    {
+        if (!path.Path.StartsWith("/content/dam/"))
+            throw new PluginMisconfigurationException("Asset path must start with /content/dam/");
+
+        var apiPath = path.Path.Replace("/content/dam/", "/api/assets/", StringComparison.OrdinalIgnoreCase);
+        var getRequest = new RestRequest($"{apiPath}.json", Method.Get);
+        var getResponse = await Client.ExecuteWithErrorHandling<AssetMetadataDto>(getRequest);
+
+        var currentTags = getResponse?.Properties?.CqTags ?? [];
+        var updatedTags = currentTags.Where(t => !input.TagsToRemove.Contains(t)).ToList();
+
+        await UpdateAssetTags(path, new UpdateAssetTagsRequest { Tags = updatedTags });
+    }
 }
