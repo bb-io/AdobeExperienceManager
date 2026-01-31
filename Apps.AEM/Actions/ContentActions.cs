@@ -16,6 +16,7 @@ using Blackbird.Filters.Transformations;
 using Blackbird.Filters.Xliff.Xliff2;
 using Newtonsoft.Json;
 using RestSharp;
+using Apps.AEM.Models.Dtos;
 
 namespace Apps.AEM.Actions;
 
@@ -191,6 +192,30 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
         }
 
         return uploadResults;
+    }
+
+    [Action("Change tags", Description = "Add or remove tags from content (pages, assets, etc.).")]
+    public async Task<ChangeTagsResponse> ChangeTags([ActionParameter] ChangeTagsRequest input)
+    {
+        if (input.AddTags?.Any() != true && input.RemoveTags?.Any() != true)
+            throw new PluginMisconfigurationException("At least one tag to add or to remove must be provided.");
+
+        var updateTagsRequest = new RestRequest("/content/services/bb-aem-connector/update-tags.json", Method.Post)
+            .AddJsonBody(new
+            {
+                contentPath = input.ContentPath,
+                addTags = input.AddTags ?? [],
+                removeTags = input.RemoveTags ?? [],
+            });
+
+        await Client.ExecuteWithErrorHandling(updateTagsRequest);
+
+        var tags = await Client.GetContentTagsAsync([input.ContentPath]);
+
+        return new ChangeTagsResponse
+        {
+            Tags = tags.GetValueOrDefault(input.ContentPath, []),
+        };
     }
 
     private static string ModifyPath(string path, string sourceLanguage, string targetLanguage)

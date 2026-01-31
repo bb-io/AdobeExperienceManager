@@ -114,6 +114,7 @@ Navigate to your project's translation rules in the `/content` section, click "A
 - **Get asset tags**: Get the tags for a specific asset.
 - **Update asset tags**: Update the tags for a specific asset.
 - **Remove asset tags**: Remove specific tags from an asset.
+- **Change tags**: Add or remove tags from any content (pages, experience fragments, assets, etc).
 
 ## Events
 

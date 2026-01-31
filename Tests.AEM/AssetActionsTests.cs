@@ -68,39 +68,4 @@ public class AssetActionsTests : TestBase
         Assert.IsNotNull(result.File, "No metadata was returned");
         PrintResult(result);
     }
-
-    [TestMethod]
-    [DynamicData(nameof(AllInvocationContexts), DynamicDataDisplayName = nameof(GetConnectionTypeName))]
-    public async Task GetAssetTags_ReturnsResults(InvocationContext context)
-    {
-        // Arrange
-        var actions = new AssetActions(context, FileManager);
-        var request = new AssetPathRequest()
-        {
-            Path = "/content/dam/dita/en/test.dita",
-        };
-
-        // Act
-        var result = await actions.GetAssetTags(request);
-
-        // Assert
-        Assert.IsNotNull(result.Tags);
-        PrintResult(result);
-    }
-
-    [TestMethod]
-    [DynamicData(nameof(AllInvocationContexts), DynamicDataDisplayName = nameof(GetConnectionTypeName))]
-    public async Task UpdateAssetTags_ShouldBeSuccessful(InvocationContext context)
-    {
-        // Arrange
-        var actions = new AssetActions(context, FileManager);
-        var request = new AssetPathRequest()
-        {
-            Path = "/content/dam/dita/en/test.dita",
-        };
-        var input = new UpdateAssetTagsRequest { Tags = ["test1", "test2"] };
-
-        // Act
-        await actions.UpdateAssetTags(request, input);
-    }
 }

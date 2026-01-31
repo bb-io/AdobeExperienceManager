@@ -186,4 +186,109 @@ public class ContentActionsTests : TestBase
         Assert.IsNotNull(response, "Response should not be null");
         TestContext.WriteLine(JsonConvert.SerializeObject(response, Formatting.Indented));
     }
+
+    [TestMethod]
+    [DynamicData(nameof(AllInvocationContexts), DynamicDataDisplayName = nameof(GetConnectionTypeName))]
+    public async Task AddTags_ShouldBeSuccessful(InvocationContext context)
+    {
+        // Arrange
+        var actions = new ContentActions(context, FileManager);
+        var contentId = "/content/wknd/language-masters/nl/faqs";
+        var tagId = "workflow:wcm/ready-for-translation";
+        var addRequest = new ChangeTagsRequest
+        {
+            ContentPath = contentId,
+            AddTags = [tagId]
+        };
+
+        // Act
+        var addResult = await actions.ChangeTags(addRequest);
+
+        // Assert
+        Assert.IsTrue(addResult.Tags.Contains(tagId), "Tag was not added");
+    }
+
+    [TestMethod]
+    [DynamicData(nameof(AllInvocationContexts), DynamicDataDisplayName = nameof(GetConnectionTypeName))]
+    public async Task RemoveTags_ShouldBeSuccessful(InvocationContext context)
+    {
+        // Arrange
+        var actions = new ContentActions(context, FileManager);
+        var contentId = "/content/wknd/us/en/magazine/san-diego-surf";
+        var tagId = "workflow:wcm/ready-for-translation";
+
+        // Ensure tag exists first
+        await actions.ChangeTags(new ChangeTagsRequest { ContentPath = contentId, AddTags = [tagId] });
+
+        var removeRequest = new ChangeTagsRequest
+        {
+            ContentPath = contentId,
+            RemoveTags = [tagId]
+        };
+
+
+        // Act
+        var removeResult = await actions.ChangeTags(removeRequest);
+
+        // Assert
+        Assert.IsFalse(removeResult.Tags.Contains(tagId), "Tag was not removed");
+    }
+
+    [TestMethod]
+    [DynamicData(nameof(AllInvocationContexts), DynamicDataDisplayName = nameof(GetConnectionTypeName))]
+    public async Task AddAndRemoveTags_ShouldBeSuccessful(InvocationContext context)
+    {
+        // Arrange
+        var actions = new ContentActions(context, FileManager);
+        var contentId = "/content/wknd/us/en/magazine/san-diego-surf";
+        var tagIdToAdd = "workflow:projects/wcm/landingpage";
+        var tagIdToRemove = "workflow:wcm/ready-for-translation";
+
+        // Ensure tag exists first
+        await actions.ChangeTags(new ChangeTagsRequest { ContentPath = contentId, RemoveTags = [tagIdToAdd] });
+        await actions.ChangeTags(new ChangeTagsRequest { ContentPath = contentId, AddTags = [tagIdToRemove] });
+
+        var changeTagRequest = new ChangeTagsRequest
+        {
+            ContentPath = contentId,
+            AddTags = [tagIdToAdd],
+            RemoveTags = [tagIdToRemove]
+        };
+
+        // Act
+        var bothResult = await actions.ChangeTags(changeTagRequest);
+
+        // Assert
+        Assert.IsTrue(bothResult.Tags.Contains(tagIdToAdd), "Tag was not added in combined request");
+        Assert.IsFalse(bothResult.Tags.Contains(tagIdToRemove), "Tag was not removed in combined request");
+    }
+
+    [TestMethod]
+    [DynamicData(nameof(AllInvocationContexts), DynamicDataDisplayName = nameof(GetConnectionTypeName))]
+    public async Task AddAndRemoveTags_WithAssets_ShouldBeSuccessful(InvocationContext context)
+    {
+        // Arrange
+        var actions = new ContentActions(context, FileManager);
+        var contentId = "/content/dam/aem-demo-assets/en/guides/dita-sample-content_IT/Smart-security.ditamap";
+        var tagIdsToAdd = new[] { "workflow:projects/wcm/landingpage", "workflow:projects/wcm/email" };
+        var tagIdsToRemove = new[] { "workflow:wcm/ready-for-translation", "workflow:wcm/translation" };
+
+        // Ensure tag exists first
+        await actions.ChangeTags(new ChangeTagsRequest { ContentPath = contentId, RemoveTags = tagIdsToAdd });
+        await actions.ChangeTags(new ChangeTagsRequest { ContentPath = contentId, AddTags = tagIdsToRemove });
+
+        var changeTagRequest = new ChangeTagsRequest
+        {
+            ContentPath = contentId,
+            AddTags = tagIdsToAdd,
+            RemoveTags = tagIdsToRemove
+        };
+
+        // Act
+        var bothResult = await actions.ChangeTags(changeTagRequest);
+
+        // Assert
+        Assert.IsTrue(bothResult.Tags.Intersect(tagIdsToAdd).Any(), "Tags were not added in combined request");
+        Assert.IsFalse(bothResult.Tags.Intersect(tagIdsToRemove).Any(), "Tags were not removed in combined request");
+    }
 }

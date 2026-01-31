@@ -6,6 +6,7 @@ using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Exceptions;
 using Blackbird.Applications.Sdk.Utils.RestSharp;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using RestSharp;
 using RestSharp.Authenticators;
 
@@ -20,6 +21,101 @@ public class ApiClient(IEnumerable<AuthenticationCredentialsProvider> credential
             : new HttpBasicAuthenticator(credentials.GetUsername(), credentials.GetPassword())
 })
 {
+    /// <summary>
+    /// Requests content data for multiple paths and extracts a mapping of Path -> Tags.
+    /// </summary>
+    /// <param name="paths">One or more AEM content or DAM paths (e.g., "/content/wknd/jcr:content").</param>
+    /// <returns>A dictionary where keys are paths and values are lists of tags.</returns>
+    public async Task<Dictionary<string, List<string>>> GetContentTagsAsync(IEnumerable<string> paths)
+    {
+        var finalResult = new Dictionary<string, List<string>>();
+
+        if (paths == null || !paths.Any())
+            return finalResult;
+
+        var sitesPaths = paths.Where(p => p.StartsWith("/content/") && !p.StartsWith("/content/dam/")).ToList();
+        var damPaths = paths.Where(p => p.StartsWith("/content/dam/")).ToList();
+
+        var tasks = new List<Task<Dictionary<string, List<string>>>>();
+
+        // Sites can be batched in a single call
+        if (sitesPaths.Count > 0)
+            tasks.Add(GetSitesTagsAsync(sitesPaths));
+
+        // DAM assets are fetched individually
+        foreach (var damPath in damPaths)
+            tasks.Add(GetDamAssetTagsAsync(damPath));
+
+        var results = await Task.WhenAll(tasks);
+
+        foreach (var dict in results)
+            foreach (var entry in dict)
+                finalResult[entry.Key] = entry.Value;
+
+        return finalResult;
+    }
+
+    public async Task<Dictionary<string, List<string>>> GetSitesTagsAsync(IEnumerable<string> paths)
+    {
+        var request = new RestRequest("/content/services/bb-aem-connector/content.json");
+
+        foreach (var path in paths)
+        {
+            request.AddQueryParameter("contentPath", path);
+        }
+
+        var response = await ExecuteWithErrorHandling(request);
+        var dict = new Dictionary<string, List<string>>();
+
+        if (string.IsNullOrWhiteSpace(response.Content))
+            return dict;
+
+        var json = JObject.Parse(response.Content);
+
+        if (json["values"] is not JArray contentItems)
+            return dict;
+
+        foreach (var item in contentItems)
+        {
+            var pathKey = item["path"]?.ToString().Replace("/jcr:content", "");
+
+            if (string.IsNullOrEmpty(pathKey))
+                continue;
+
+            var tags = item["properties"]?
+                .FirstOrDefault(p => p["name"]?.ToString() == "cq:tags")?["values"]?
+                .ToObject<List<string>>() ?? [];
+
+            dict[pathKey] = tags;
+        }
+
+        return dict;
+    }
+
+    public async Task<Dictionary<string, List<string>>> GetDamAssetTagsAsync(string damPath)
+    {
+        var result = new Dictionary<string, List<string>>();
+
+        if (string.IsNullOrWhiteSpace(damPath))
+            return result;
+
+        string apiPath = damPath.Replace("/content/dam/", "/api/assets/", StringComparison.OrdinalIgnoreCase);
+
+        var request = new RestRequest($"{apiPath}.json", Method.Get);
+        var response = await ExecuteWithErrorHandling(request);
+
+        if (string.IsNullOrWhiteSpace(response.Content))
+            return result;
+
+        var json = JObject.Parse(response.Content);
+        var tags = json["properties"]?["metadata"]?["cq:tags"]?
+            .ToObject<List<string>>() ?? [];
+
+        result[damPath] = tags;
+
+        return result;
+    }
+
     public override async Task<RestResponse> ExecuteWithErrorHandling(RestRequest request)
     {
         request.AddHeader("Cache-Control", "no-cache");
