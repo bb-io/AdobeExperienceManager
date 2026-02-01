@@ -1,5 +1,6 @@
 ﻿using Apps.AEM.Actions;
 using Apps.AEM.Models.Requests;
+using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using System.Reflection;
 using Tests.AEM.Base;
@@ -267,5 +268,30 @@ public class GuidesActionsTests : TestBase
         Assert.AreEqual("application/xml", result.Content.ContentType, "File content type should be application/xml");
 
         TestContext?.WriteLine($"Generated DITA file: {result.Content.Name}");
+    }
+
+    [TestMethod]
+    [DynamicData(nameof(AllInvocationContexts), DynamicDataDisplayName = nameof(GetConnectionTypeName))]
+    public async Task UploadContent_Ditatopic_ShouldSucceed(InvocationContext context)
+    {
+        // Arrange
+        var actions = new GuidesActions(context, FileManager);
+        var request = new UploadDitaContentRequest
+        {
+            Content = new FileReference
+            {
+                Name = "__content__dam__aem-demo-assets__en__guides__dita-sample-content_IT__topics__user-rights.dita",
+                ContentType = "application/xml"
+            },
+            SourceFilePath = "/content/dam/aem-demo-assets/en/guides/dita-sample-content_IT/topics/user-rights.dita",
+            TargetFilePath = "/content/dam/aem-demo-assets/es/guides/dita-sample-content_IT/topics/user-rights.dita",
+        };
+
+        // Act
+        var result = await actions.UploadDitaContent(request);
+
+        // Assert
+        PrintResult(result);
+        Assert.IsNotNull(result, "Response should not be null");
     }
 }

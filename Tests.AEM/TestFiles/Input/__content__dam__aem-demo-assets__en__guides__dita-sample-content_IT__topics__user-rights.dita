@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE concept PUBLIC "-//OASIS//DTD DITA Concept//EN" "technicalContent/dtd/concept.dtd">
+<concept id="GUID-1f3e96f4-4148-4cc1-a01d-7e2585264f07">
+  <title>About user rights</title>
+  <shortdesc>In this topic, you learn about the different user rights. You can assign rights to or withdraw them from individual users or user groups.</shortdesc>
+  <conbody>
+    <p>User rights define what a user can do and see when using the <ph keyref="productname"/> application. Administrators can adjust rights for themselves and for other users and user groups. They cannot assign admin rights to users and cannot withdraw admin rights from other administrators.</p>
+    <p>You can see your current right on your profile.</p>
+    <simpletable conkeyref="reuse-rights/user-rights-table">
+      <strow>
+      </strow>
+    </simpletable>
+  </conbody>
+</concept>

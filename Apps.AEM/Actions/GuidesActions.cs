@@ -10,8 +10,8 @@ using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using Blackbird.Filters.Transformations;
 using Blackbird.Filters.Xliff.Xliff2;
 using RestSharp;
-using System.Linq;
 using System.Text;
+using System.Xml.Serialization;
 
 namespace Apps.AEM.Actions;
 
@@ -140,12 +140,20 @@ public class GuidesActions(InvocationContext invocationContext, IFileManagementC
             .AddQueryParameter("sourcePath", input.SourceFilePath)
             .AddQueryParameter("targetPath", input.TargetFilePath);
 
-        var uploadResult = await Client.ExecuteWithErrorHandling<UploadContentResponse>(request);
+        var uploadResponse = await Client.ExecuteWithErrorHandling(request);
 
-        if (string.IsNullOrEmpty(uploadResult?.Message))
+        if (string.IsNullOrEmpty(uploadResponse.Content))
             throw new PluginApplicationException("Failed to upload content. No message returned from server.");
 
-        return uploadResult;
+        var serializer = new XmlSerializer(typeof(UploadDitaContentResponseDto));
+        using var responseReader = new StringReader(uploadResponse.Content ?? "");
+        var uploadResult = (UploadDitaContentResponseDto?)serializer.Deserialize(responseReader);
+
+        return new()
+        {
+            ContentId = uploadResult?.Path ?? "",
+            Message = uploadResult?.Message ?? "",
+        };
     }
 
     private static bool ValidateDitaPath(string path, List<string> errors)
