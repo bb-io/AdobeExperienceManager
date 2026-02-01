@@ -206,11 +206,9 @@ public class GuidesActionsTests : TestBase
     {
         // Arrange
         var actions = new GuidesActions(context, FileManager);
-        var request = new DownloadContentRequest
+        var request = new DownloadDitaContentRequest
         {
             ContentId = "/content/dam/aem-demo-assets/en/guides/dita-sample-content_IT/topics/user-rights.dita",
-            FileFormat = "original",
-            IncludeReferenceContent = true,
         };
 
         // Act
@@ -231,11 +229,9 @@ public class GuidesActionsTests : TestBase
     {
         // Arrange
         var actions = new GuidesActions(context, FileManager);
-        var request = new DownloadContentRequest
+        var request = new DownloadDitaContentRequest
         {
             ContentId = "/content/dam/aem-demo-assets/en/guides/dita-sample-content_IT/Smart-security.ditamap",
-            FileFormat = "original",
-            IncludeReferenceContent = true,
         };
 
         // Act
@@ -256,11 +252,9 @@ public class GuidesActionsTests : TestBase
     {
         // Arrange
         var actions = new GuidesActions(context, FileManager);
-        var request = new DownloadContentRequest
+        var request = new DownloadDitaContentRequest
         {
             ContentId = "/content/dam/aem-demo-assets/en/guides/book.ditamap",
-            FileFormat = "original",
-            IncludeReferenceContent = true,
         };
 
         // Act

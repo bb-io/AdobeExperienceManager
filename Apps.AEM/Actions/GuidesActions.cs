@@ -15,7 +15,7 @@ using System.Text;
 
 namespace Apps.AEM.Actions;
 
-[ActionList("Content")]
+[ActionList("Guides")]
 public class GuidesActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) : Invocable(invocationContext)
 {
     [Action("Search referenced content", Description = "Finds references from books and chapters (ditamaps).")]
@@ -99,7 +99,7 @@ public class GuidesActions(InvocationContext invocationContext, IFileManagementC
     }
 
     [Action("Download guides file", Description = "Download's a DITA or a ditamap file.")]
-    public async Task<DownloadContentResponse> DownloadDitaContent([ActionParameter] DownloadContentRequest input)
+    public async Task<DownloadContentResponse> DownloadDitaContent([ActionParameter] DownloadDitaContentRequest input)
     {
         var request = new RestRequest("/content/services/bb-aem-connector/dita-file-exporter.xml")
             .AddQueryParameter("contentPath", input.ContentId);
@@ -113,10 +113,6 @@ public class GuidesActions(InvocationContext invocationContext, IFileManagementC
             new MemoryStream(Encoding.UTF8.GetBytes(response.Content)) { Position = 0 },
             "application/xml",
             ContentPathToFilenameConverter.PathToFilename(input.ContentId));
-
-        // Early return for original format as no references are supported for original DITA files
-        if (input.FileFormat != "original")
-            throw new PluginMisconfigurationException($"Only 'original' file format is supported for DITA content: {input.FileFormat}");
 
         return new(rootFile, []);
     }
