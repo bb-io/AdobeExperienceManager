@@ -25,9 +25,12 @@ public class SearchContentRequest
     [StaticDataSource(typeof(EventsDataHandler))]
     public IEnumerable<string>? Events { get; set; }
 
-    [Display("Created or modified after", Description = "Find content created or modified after specified date. Last 31 days by default")]
+    [Display("Created or modified after", Description = "Find content created or modified after specified date.")]
     public DateTime? StartDate { get; set; }
 
-    [Display("Created before", Description = "Find content created or modified before specified date.")]
+    [Display("Created before", Description = "Find content created or modified before specified date. By default looks up for the last 5 years.")]
     public DateTime? EndDate { get; set; }
+
+    [Display("Max items to return", Description = "How many items could be returned at once. By default it's 100.")]
+    public int? MaxItems { get; set; }
 }
