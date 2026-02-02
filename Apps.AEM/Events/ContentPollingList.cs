@@ -1,10 +1,12 @@
+using Apps.AEM.Constants;
 using Apps.AEM.Events.Models;
-using Apps.AEM.Handlers;
+using Apps.AEM.Models.Dtos;
 using Apps.AEM.Models.Responses;
 using Apps.AEM.Utils;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.Sdk.Common.Polling;
 using Blackbird.Applications.SDK.Blueprints;
+using RestSharp;
 
 namespace Apps.AEM.Events;
 
@@ -57,42 +59,53 @@ public class ContentPollingList(InvocationContext invocationContext) : Invocable
     }
 
     [PollingEvent("On tag added", Description = "A polling event that for new content with any of the specified tags. If any content is found, the event is triggered.")]
-    public async Task<PollingEventResponse<TagsMemory, SearchContentResponse>> OnTagAddedAsync(
+    public async Task<PollingEventResponse<TagsMemory, OnTagAddedContentResponse>> OnTagAddedAsync(
         PollingEventRequest<TagsMemory> request,
         [PollingEventParameter] OnTagsAddedRequest input)
     {
-        var triggerTime = DateTime.UtcNow;
-        var lastTriggeredTime = request.Memory?.LastTriggeredTime ?? triggerTime.AddDays(-365);
+        input.ContentType ??= ContentTypes.Page;
+        var property = input.ContentType == ContentTypes.Page
+            ? "jcr:content/cq:tags"
+            : "jcr:content/metadata/cq:tags";
 
-        var searchRequest = ContentSearch.BuildRequest(new()
+        var queryBuilderRequest = new RestRequest("/bin/querybuilder.json")
+                .AddQueryParameter("path", input.RootPathPrefix)
+                .AddQueryParameter("type", input.ContentType)
+                .AddQueryParameter("p.limit", -1)                   // TODO Implement pagination
+                .AddQueryParameter("p.guessTotal", "true")
+                .AddQueryParameter("p.hits", "selective")
+                .AddQueryParameter("p.properties", "jcr:path")    // important: this limits what we receive
+                .AddQueryParameter("property", property)
+                .AddQueryParameter("property.or", "true");
+
+        var index = 1;
+        foreach (var tag in input.Tags)
         {
-            RootPath = input.RootPath,
-            StartDate = lastTriggeredTime,
-            EndDate = triggerTime,
-            Tags = input.Tags,
-            Keyword = input.Keyword,
-            ContentType = input.ContentType,
-            Events = new EventsDataHandler().GetData().Select(x => x.Value),
-        });
+            queryBuilderRequest.AddQueryParameter($"property.{index}_value", tag);
+            index++;
+        }
 
-        IEnumerable<ContentResponse> contentFound = await Client.Paginate<ContentResponse>(searchRequest);
+        var queryBuilderResponse = await Client.ExecuteWithErrorHandling<GetPathByTagQueryBuilderResponseDto>(queryBuilderRequest);
+        var contentFound = queryBuilderResponse.Hits
+            .Where(hit => !string.IsNullOrWhiteSpace(hit.Path))
+            .Select(hit => hit.Path)
+            .ToHashSet();
 
         if (input.RootPathIncludes?.Any() == true)
         {
             contentFound = contentFound
-                .Where(content => input.RootPathIncludes.Any(include => content.ContentId.Contains(include)));
+                .Where(content => input.RootPathIncludes.Any(include => content.Contains(include)))
+                .ToHashSet();
         }
 
         var previoslyObservedContent = request.Memory?.ContentWithTagsObserved ?? new HashSet<string>();
-        var recentlyChangedContent = contentFound.Select(content => content.ContentId).ToHashSet();
 
-        var newContentWithTags = recentlyChangedContent.Except(previoslyObservedContent);
+        var newContentWithTags = contentFound.Except(previoslyObservedContent);
 
-        var response = new PollingEventResponse<TagsMemory, SearchContentResponse>
+        var response = new PollingEventResponse<TagsMemory, OnTagAddedContentResponse>
         {
             Memory = new TagsMemory
             {
-                LastTriggeredTime = triggerTime,
                 ContentWithTagsObserved = previoslyObservedContent.Union(newContentWithTags).ToHashSet(),
             }
         };
@@ -105,7 +118,7 @@ public class ContentPollingList(InvocationContext invocationContext) : Invocable
         else
         {
             response.FlyBird = newContentWithTags.Any();
-            response.Result = new SearchContentResponse(contentFound.Where(content => newContentWithTags.Contains(content.ContentId)));
+            response.Result = new OnTagAddedContentResponse(newContentWithTags);
         }
 
         return response;

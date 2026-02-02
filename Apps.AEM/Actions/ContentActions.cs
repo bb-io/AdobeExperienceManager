@@ -16,6 +16,8 @@ using Blackbird.Filters.Transformations;
 using Blackbird.Filters.Xliff.Xliff2;
 using Newtonsoft.Json;
 using RestSharp;
+using System.IO;
+using System.Text;
 
 namespace Apps.AEM.Actions;
 
@@ -30,12 +32,13 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
         var searchRequest = ContentSearch.BuildRequest(new()
         {
             RootPath = input.RootPath,
-            StartDate = input.StartDate ?? actionTime.AddDays(-31),
+            StartDate = input.StartDate ?? actionTime.AddDays(-365 * 5),
             EndDate = input.EndDate ?? actionTime,
             Tags = input.Tags,
             Keyword = input.Keyword,
             ContentType = input.ContentType,
             Events = input.Events,
+            Limit = 100,
         });
 
         var contentResults = await Client.Paginate<ContentResponse>(searchRequest);
@@ -48,18 +51,25 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
     public async Task<DownloadContentResponse> DownloadContent(
         [ActionParameter] DownloadContentRequest input)
     {
+        if (input.ContentId.StartsWith("/content/dam") && (input.ContentId.EndsWith(".dita") || input.ContentId.EndsWith(".ditamap")))
+            throw new PluginMisconfigurationException("Use dedicated Guides actions for translating DITA files.");
+
+        if (input.ContentId.StartsWith("/content/dam"))
+            throw new PluginMisconfigurationException("Assets which are not DITA files must use dedicated asset actions.");
+
+        if (!input.ContentId.StartsWith("/content/"))
+            throw new PluginMisconfigurationException("Only sites content is supported (should start with /content/.");
+
         var request = new RestRequest("/content/services/bb-aem-connector/content-exporter.json")
             .AddQueryParameter("contentPath", input.ContentId);
 
         var response = await Client.ExecuteWithErrorHandling(request);
         if (response.Content == null)
-        {
             throw new PluginApplicationException("Failed to retrieve content. Response content is null.");
-        }
 
         var (referenceEntities, referenceErrors) = input.IncludeReferenceContent == true
-            ? await GetReferenceEntitiesAsync(response.Content, input.SkipReferenceContentPaths ?? [])
-            : (new List<ReferenceEntity>(), new List<string>());
+                ? await GetReferenceEntitiesAsync(response.Content, input.SkipReferenceContentPaths ?? [])
+                : (new List<ReferenceEntity>(), new List<string>());
 
         var filename = ContentPathToFilenameConverter.PathToFilename(input.ContentId);
 
@@ -97,14 +107,12 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
         return new(outputFile, referenceErrors);
     }
 
-    [Action("Upload content", Description = "Update content at the specified path, or create it if it does not exist. Accepts a translated file (interoperable HTML or XLIFF) and the original JSON file as input.")]
+    [Action("Upload sites content", Description = "Update content at the specified path, or create it if it does not exist. Accepts a translated file (interoperable HTML or XLIFF) and the original JSON file as input.")]
     [BlueprintActionDefinition(BlueprintAction.UploadContent)]
     public async Task<IEnumerable<UploadContentResponse>> UploadContent([ActionParameter] UploadContentRequest input)
     {
         if (!string.IsNullOrWhiteSpace(input.ContentId) && input.SkipUpdatingReferences != true)
-        {
             throw new PluginMisconfigurationException("'ContentId' can only be set with 'SkipUpdatingReferences' being set to true, as path overwrite only impacts a main (root) content.");
-        }
 
         var fileStream = await fileManagementClient.DownloadAsync(input.Content);
         var memoryStream = new MemoryStream();
@@ -118,6 +126,9 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
             inputString = Transformation.Parse(inputString, input.Content.Name).Target().Serialize()
                 ?? throw new PluginMisconfigurationException("XLIFF did not contain any files");
         }
+
+        if (GuidesActions.IsDita(inputString))
+            throw new PluginMisconfigurationException("Use 'Upload guides content' action to upload dita maps and topics.");
 
         var entities = OriginalJsonValidator.IsJson(inputString)
             ? JsonToOriginalConverter.ConvertToEntities(inputString)
@@ -191,6 +202,40 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
         }
 
         return uploadResults;
+    }
+
+    [Action("Change tags", Description = "Add or remove tags from content (pages, assets, etc.).")]
+    public async Task<ChangeTagsResponse> ChangeTags([ActionParameter] ChangeTagsRequest input)
+    {
+        if (input.AddTags?.Any() != true && input.RemoveTags?.Any() != true)
+            throw new PluginMisconfigurationException("At least one tag to add or to remove must be provided.");
+
+        var updateTagsRequest = new RestRequest("/content/services/bb-aem-connector/update-tags.json", Method.Post)
+            .AddJsonBody(new
+            {
+                contentPath = input.ContentPath,
+                addTags = input.AddTags ?? [],
+                removeTags = input.RemoveTags ?? [],
+            });
+
+        await Client.ExecuteWithErrorHandling(updateTagsRequest);
+
+        var tags = await Client.GetContentTagsAsync([input.ContentPath]);
+
+        return new ChangeTagsResponse
+        {
+            Tags = tags.GetValueOrDefault(input.ContentPath, []),
+        };
+    }
+
+    [Action("Get content tags", Description = "Retrieve tags associated with specific content paths.")]
+    public async Task<GetContentTagsResponse> GetContentTags([ActionParameter] GetContentTagsRequest input)
+    {
+        var tags = await Client.GetContentTagsAsync([input.ContentId]);
+        return new GetContentTagsResponse
+        {
+            Tags = tags.GetValueOrDefault(input.ContentId, []),
+        };
     }
 
     private static string ModifyPath(string path, string sourceLanguage, string targetLanguage)

@@ -111,6 +111,10 @@ Navigate to your project's translation rules in the `/content` section, click "A
    - **Overwrite main content path** (optional): Completely replaces the source content path to which language inputs will be applied. Useful for testing and requires "Skip references" to be set to true.
    - **Skip references** (optional): If set to true, only the main (root) content item will be updated; reference content will not be updated.
    - **Ignore reference content errors** (optional): When set to true, errors that occur while updating reference content will be ignored. Errors will be visible in the action output.
+- **Get asset tags**: Get the tags for a specific asset.
+- **Update asset tags**: Update the tags for a specific asset.
+- **Remove asset tags**: Remove specific tags from an asset.
+- **Change tags**: Add or remove tags from any content (pages, experience fragments, assets, etc).
 
 ## Events
 

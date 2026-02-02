@@ -1,3 +1,4 @@
+using Apps.AEM.Constants;
 using Apps.AEM.Events;
 using Apps.AEM.Events.Models;
 using Blackbird.Applications.Sdk.Common.Invocation;
@@ -37,8 +38,7 @@ public class PagePollingListTests : TestBase
         Assert.IsNull(response.Result);
         
         // Log for debugging
-        TestContext.WriteLine($"Response: {JsonConvert.SerializeObject(response, Formatting.Indented)}");
-        TestContext.WriteLine($"Last triggered time: {response.Memory.LastTriggeredTime}");
+        PrintResult(response);
         
         Assert.IsFalse(response.FlyBird, "FlyBird should be false for first run with null memory");
         
@@ -58,14 +58,7 @@ public class PagePollingListTests : TestBase
         var secondResponse = await pollingList.OnContentCreatedOrUpdated(secondRequest, optionalRequest);
         
         // Log second response
-        TestContext.WriteLine($"Second Response: {JsonConvert.SerializeObject(secondResponse, Formatting.Indented)}");
-        if (secondResponse.Result != null)
-        {
-            TestContext.WriteLine($"Found pages: {secondResponse.Result.TotalCount}");
-        }
-        
-        // The FlyBird value will depend on whether any pages were created/updated during the test
-        TestContext.WriteLine($"FlyBird: {secondResponse.FlyBird}");
+        PrintResult(secondResponse);
     }
 
     [TestMethod]
@@ -80,12 +73,18 @@ public class PagePollingListTests : TestBase
             Memory = null,
             PollingTime = DateTime.UtcNow
         };
-        var optionalRequest = new OnTagsAddedRequest();
+        var optionalRequest = new OnTagsAddedRequest()
+        {
+            Tags = ["workflow:wcm/ready-for-translation"],
+            RootPathPrefix = "/content/test-site/en/",
+        };
 
         // Act
         var response = await pollingList.OnTagAddedAsync(request, optionalRequest);
 
         // Assert
+        PrintResult(response.Result);
+
         Assert.IsFalse(response.FlyBird, "FlyBird should be false for first run with null memory");
         Assert.IsNotNull(response.Memory);
         Assert.IsNull(response.Result);
@@ -103,7 +102,6 @@ public class PagePollingListTests : TestBase
         {
             Memory = new()
             {
-                LastTriggeredTime = testRunTime.AddDays(-360), // 360 days in the past as test instance data might be old
                 ContentWithTagsObserved = new HashSet<string>() // { "/content/test-site/en/Homepage" }
             },
             PollingTime = testRunTime
@@ -111,14 +109,47 @@ public class PagePollingListTests : TestBase
         var optionalRequest = new OnTagsAddedRequest()
         {
             Tags = ["workflow:wcm/ready-for-translation"],
-            RootPath = "/content/test-site/en/",
+            RootPathPrefix = "/content/wknd/language-masters/",
         };
 
         // Act
         var response = await pollingList.OnTagAddedAsync(request, optionalRequest);
 
         // Assert
-        TestContext.WriteLine($"Response: {JsonConvert.SerializeObject(response.Result, Formatting.Indented)}");
+        PrintResult(response.Result);
+
+        Assert.IsTrue(response.FlyBird);
+        Assert.IsNotNull(response.Memory);
+        Assert.IsNotNull(response.Result);
+    }
+
+    [TestMethod]
+    [DynamicData(nameof(AllInvocationContexts), DynamicDataDisplayName = nameof(GetConnectionTypeName))]
+    public async Task OnTagAddedAsync_WithDitaAsset_ShouldStartFlight(InvocationContext context)
+    {
+        var pollingList = new ContentPollingList(context);
+
+        // Arrange
+        var request = new PollingEventRequest<TagsMemory>
+        {
+            Memory = new()
+            {
+                ContentWithTagsObserved = new HashSet<string>() // { "/content/test-site/en/Homepage" }
+            },
+            PollingTime = DateTime.UtcNow
+        };
+        var optionalRequest = new OnTagsAddedRequest()
+        {
+            Tags = ["workflow:wcm/ready-for-translation"],
+            RootPathPrefix = "/content/dam/aem-demo-assets/en/guides/",
+            ContentType = ContentTypes.Asset,
+        };
+
+        // Act
+        var response = await pollingList.OnTagAddedAsync(request, optionalRequest);
+
+        // Assert
+        PrintResult(response.Result);
 
         Assert.IsTrue(response.FlyBird);
         Assert.IsNotNull(response.Memory);

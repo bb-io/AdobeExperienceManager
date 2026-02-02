@@ -20,7 +20,7 @@ public class AssetActionsTests : TestBase
         var actions = new AssetActions(context, FileManager);
         var request = new SearchAssetsRequest()
         {
-            RootPath = "/content/dam/some-folder",
+            RootPath = "/content/dam/dita/en",
         };
 
         // Act
