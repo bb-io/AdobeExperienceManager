@@ -12,7 +12,7 @@ public class OnTagsAddedRequest
     [DataSource(typeof(TagDataHandler))]
     public IEnumerable<string> Tags { get; set; } = [];
 
-    [Display("Root path"), FileDataSource(typeof(ContentPickerDataSourceHandler))]
+    [Display("Root path prefix")]
     public string RootPath { get; set; } = string.Empty;
 
     [Display("Root path includes")]
