@@ -70,7 +70,7 @@ public class ContentPollingList(InvocationContext invocationContext) : Invocable
 
         var queryBuilderRequest = new RestRequest("/bin/querybuilder.json")
                 .AddQueryParameter("path", input.RootPathPrefix)
-                .AddQueryParameter("type", input.ContentType ?? ContentTypes.Page)
+                .AddQueryParameter("type", input.ContentType)
                 .AddQueryParameter("p.limit", -1)                   // TODO Implement pagination
                 .AddQueryParameter("p.guessTotal", "true")
                 .AddQueryParameter("p.hits", "selective")

@@ -182,6 +182,8 @@ public class GuidesActions(InvocationContext invocationContext, IFileManagementC
 
             return jcrResponse?.AllReferences?
                 .Where(r => !string.IsNullOrEmpty(r))
+                .Where(r => r.StartsWith("GUID-") || r.StartsWith("/content/dam"))
+                .Where(r => r.EndsWith(".dita") || r.EndsWith(".ditamap"))
                 .ToList() ?? [];
         }
         catch (Exception ex)
