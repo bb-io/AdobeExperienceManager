@@ -141,7 +141,7 @@ Workflow steps:
 
 ## Demo video
 
-This demo showcases a flexible and highly configurable alternative to a traditional AEM Connector using Blackbird.io.
+[This demo](https://youtu.be/aOInlw5ADGo) showcases a flexible and highly configurable alternative to a traditional AEM Connector using Blackbird.io.
 
 With Blackbird, you can:
 
@@ -152,9 +152,7 @@ With Blackbird, you can:
 
 Unlike standard AEM connectors, Blackbird.io gives you full control over the process, with no-code configuration and enterprise-grade flexibility.
 
-import { YouTube } from '@astro-community/astro-embed-youtube';
-
-<YouTube id="https://youtu.be/aOInlw5ADGo" />
+[![Watch the video](https://img.youtube.com/vi/aOInlw5ADGo/0.jpg)](https://www.youtube.com/watch?v=aOInlw5ADGo)
 
 ## Feedback
 
