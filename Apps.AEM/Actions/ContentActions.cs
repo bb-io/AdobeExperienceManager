@@ -63,6 +63,9 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
         var request = new RestRequest("/content/services/bb-aem-connector/content-exporter.json")
             .AddQueryParameter("contentPath", input.ContentId);
 
+        if (input.ExportLiveCopyCancelledInheritance == true)
+            request.AddQueryParameter("checkLiveCopy", "true");
+
         var response = await Client.ExecuteWithErrorHandling(request);
         if (response.Content == null)
             throw new PluginApplicationException("Failed to retrieve content. Response content is null.");

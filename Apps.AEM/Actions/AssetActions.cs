@@ -65,6 +65,58 @@ public class AssetActions(InvocationContext invocationContext, IFileManagementCl
         };
     }
 
+    [Action("Get asset property", Description = "Get a specific metadata property value from an asset.")]
+    public async Task<GetAssetPropertyResponse> GetAssetProperty(
+        [ActionParameter] AssetPathRequest assetPathRequest,
+        [ActionParameter] GetAssetPropertyRequest input)
+    {
+        if (!assetPathRequest.Path.StartsWith("/content/dam/"))
+            throw new PluginMisconfigurationException("Asset path must start with /content/dam/");
+
+        var request = new RestRequest($"{assetPathRequest.Path}/jcr:content/metadata.json", Method.Get);
+        var response = await Client.ExecuteWithErrorHandling(request);
+
+        if (string.IsNullOrWhiteSpace(response.Content))
+            throw new PluginMisconfigurationException("Empty response received from AEM.");
+
+        using var jsonDocument = System.Text.Json.JsonDocument.Parse(response.Content);
+
+        if (jsonDocument.RootElement.TryGetProperty(input.PropertyName, out var propertyValue))
+        {
+            return new GetAssetPropertyResponse
+            {
+                PropertyName = input.PropertyName,
+                PropertyValue = propertyValue.ToString()
+            };
+        }
+
+        throw new PluginMisconfigurationException($"Property '{input.PropertyName}' not found on the asset.");
+    }
+
+    [Action("Update asset metadata", Description = "Updates the metadata of an asset.")]
+    public async Task UpdateAssetMetadata(
+        [ActionParameter] AssetPathRequest assetPathRequest,
+        [ActionParameter] UpdateAssetMetadataRequest input)
+    {
+        if (!assetPathRequest.Path.StartsWith("/content/dam/"))
+            throw new PluginMisconfigurationException("Asset path must start with /content/dam/");
+
+        var apiPath = assetPathRequest.Path.Replace("/content/dam/", "/api/assets/", StringComparison.OrdinalIgnoreCase);
+
+        var request = new RestRequest(apiPath, Method.Put);
+
+        request.AddJsonBody(new
+        {
+            @class = "asset",
+            properties = new Dictionary<string, string>
+            {
+                { input.PropertyName, input.PropertyValue }
+            }
+        });
+
+        await Client.ExecuteWithErrorHandling(request);
+    }
+
     [Action("Download asset", Description = "Download an asset from the path.")]
     public async Task<DownloadAssetResponse> DownloadAsset([ActionParameter] AssetPathRequest input)
     {
