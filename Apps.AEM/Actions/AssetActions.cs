@@ -93,7 +93,6 @@ public class AssetActions(InvocationContext invocationContext, IFileManagementCl
         throw new PluginMisconfigurationException($"Property '{input.PropertyName}' not found on the asset.");
     }
 
-    // Throws errors in the demo scenario, needs proper error handling for non-existing properties and assets and for accessing published assets
     [Action("Update asset metadata", Description = "Updates the metadata of an asset.")]
     public async Task UpdateAssetMetadata(
         [ActionParameter] AssetPathRequest assetPathRequest,

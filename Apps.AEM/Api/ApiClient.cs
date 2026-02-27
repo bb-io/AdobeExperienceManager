@@ -126,6 +126,7 @@ public class ApiClient(IEnumerable<AuthenticationCredentialsProvider> credential
             request.AddHeader("Authorization", $"Bearer {token}");
         }
 
+        // TODO Handle errors like "Forbidded" more explicitly
         var response = await base.ExecuteWithErrorHandling(request);
         if(response.ContentType == "text/html")
         {

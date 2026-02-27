@@ -93,6 +93,7 @@ public class AssetActionsTests : TestBase
         PrintResult(result);
     }
 
+    // This test fails in demo environment because the user doesn't have permissions to update the asset metadata
     [TestMethod]
     [DynamicData(nameof(AllInvocationContexts), DynamicDataDisplayName = nameof(GetConnectionTypeName))]
     public async Task UpdateAssetMetadata_UpdatesProperty(InvocationContext context)
