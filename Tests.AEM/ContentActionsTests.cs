@@ -28,7 +28,7 @@ public class ContentActionsTests : TestBase
         });
         
         // Assert
-        Assert.IsTrue(result.Content.Any(), "No content items were returned");
+        Assert.IsTrue(result.Items.Any(), "No content items were returned");
         TestContext.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
     }
     
@@ -48,8 +48,8 @@ public class ContentActionsTests : TestBase
         var result = await actions.SearchContent(request);
         
         // Assert
-        Assert.IsTrue(result.Content.Any(), "No content items were returned");
-        Assert.IsTrue(result.Content.All(p => p.ContentId.StartsWith(request.RootPath)), 
+        Assert.IsTrue(result.Items.Any(), "No content items were returned");
+        Assert.IsTrue(result.Items.All(p => p.ContentId.StartsWith(request.RootPath)), 
             "Some returned content items don't match the specified root path");
         TestContext.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
     }
