@@ -43,23 +43,23 @@ public class ContentFragmentActionsTests : TestBase
             "Some returned content fragments do not match the specified root path.");
     }
 
-    //[TestMethod]
-    //[DynamicData(nameof(AllInvocationContexts), DynamicDataDisplayName = nameof(GetConnectionTypeName))]
-    //public async Task SearchContentFragments_WithTags_ShouldReturnFilteredContent(InvocationContext context)
-    //{
-    //    var actions = new ContentFragmentActions(context, FileManager);
-    //    var request = new SearchContentFragmentsRequest
-    //    {
-    //        RootPath = ArticlesRootPath,
-    //        Tags = [ArticleTag],
-    //        MaxItems = 100
-    //    };
+    [TestMethod]
+    [DynamicData(nameof(AllInvocationContexts), DynamicDataDisplayName = nameof(GetConnectionTypeName))]
+    public async Task SearchContentFragments_WithTags_ShouldReturnFilteredContent(InvocationContext context)
+    {
+        var actions = new ContentFragmentActions(context, FileManager);
+        var request = new SearchContentFragmentsRequest
+        {
+            RootPath = ArticlesRootPath,
+            Tags = [ArticleTag],
+            MaxItems = 100
+        };
 
-    //    var result = await actions.SearchContentFragments(request);
-    //    TestContext.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
+        var result = await actions.SearchContentFragments(request);
+        TestContext.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
 
-    //    Assert.IsTrue(result.Items.Any(), "No content fragments were returned for the requested tag.");
-    //}
+        Assert.IsTrue(result.Items.Any(), "No content fragments were returned for the requested tag.");
+    }
 
     [TestMethod]
     [DynamicData(nameof(AllInvocationContexts), DynamicDataDisplayName = nameof(GetConnectionTypeName))]

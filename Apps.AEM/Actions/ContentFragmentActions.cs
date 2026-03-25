@@ -170,12 +170,22 @@ public class ContentFragmentActions(InvocationContext invocationContext, IFileMa
         }
     }
 
-    private static string BuildSearchQuery(string rootPath)
+    private static string BuildSearchQuery(string rootPath, IEnumerable<string>? modelTags)
     {
         var filter = new JObject
         {
             ["path"] = rootPath
         };
+
+        var requestedModelTags = modelTags?
+            .Where(tag => !string.IsNullOrWhiteSpace(tag))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        if (requestedModelTags?.Length > 0)
+        {
+            filter["modelTags"] = new JArray(requestedModelTags);
+        }
 
         var query = new JObject
         {
@@ -227,15 +237,10 @@ public class ContentFragmentActions(InvocationContext invocationContext, IFileMa
 
     private async Task<List<ContentFragmentDto>> SearchFragmentsAsync(string rootPath, IEnumerable<string>? tags, int maxItems)
     {
-        var requestedTags = tags?
-            .Where(tag => !string.IsNullOrWhiteSpace(tag))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToArray() ?? [];
-
         var request = new RestRequest($"{FragmentsEndpoint}/search")
             .AddQueryParameter("limit", Math.Min(maxItems, MaxPageSize))
             .AddQueryParameter("projection", "summary")
-            .AddQueryParameter("query", BuildSearchQuery(rootPath));
+            .AddQueryParameter("query", BuildSearchQuery(rootPath, tags));
 
         return await Client.PaginateByCursor<ContentFragmentDto>(request, maxItems);
     }
