@@ -177,6 +177,39 @@ public class ApiClient(IEnumerable<AuthenticationCredentialsProvider> credential
         return result;
     }
 
+    public async Task<List<T>> PaginateByCursor<T>(RestRequest request, int maxResultsToFetch = 1000)
+    {
+        var result = new List<T>();
+        string? cursor = null;
+
+        do
+        {
+            var cursorParameter = request.Parameters.FirstOrDefault(p => p.Name?.ToString().Equals("cursor", StringComparison.OrdinalIgnoreCase) == true);
+            if (cursorParameter != null)
+            {
+                request.Parameters.RemoveParameter(cursorParameter);
+            }
+
+            if (!string.IsNullOrWhiteSpace(cursor))
+            {
+                request.AddQueryParameter("cursor", cursor);
+            }
+
+            var response = await ExecuteWithErrorHandling<CursorPaginationDto<T>>(request);
+            result.AddRange(response.Items);
+
+            if (result.Count >= maxResultsToFetch)
+            {
+                return result.Take(maxResultsToFetch).ToList();
+            }
+
+            cursor = response.Cursor;
+        }
+        while (!string.IsNullOrWhiteSpace(cursor));
+
+        return result;
+    }
+
     protected override Exception ConfigureErrorException(RestResponse response)
     {
         if(string.IsNullOrEmpty(response.Content))
