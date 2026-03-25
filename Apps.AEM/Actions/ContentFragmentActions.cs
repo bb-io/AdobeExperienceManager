@@ -18,7 +18,7 @@ using System.Text;
 
 namespace Apps.AEM.Actions;
 
-[ActionList("Content")]
+[ActionList("Content fragments")]
 public class ContentFragmentActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient)
     : Invocable(invocationContext)
 {
@@ -27,7 +27,7 @@ public class ContentFragmentActions(InvocationContext invocationContext, IFileMa
     private const int DefaultSearchMaxItems = 100;
     private const int MaxPageSize = 50;
 
-    [Action("Search content fragments", Description = "Search for content fragments by DAM path prefix and tags.")]
+    [Action("Search content fragments (experimental)", Description = "Search for content fragments by DAM path prefix and tags.")]
     public async Task<SearchContentFragmentResponse> SearchContentFragments([ActionParameter] SearchContentFragmentsRequest input)
     {
         var rootPath = string.IsNullOrWhiteSpace(input.RootPath)
@@ -42,7 +42,7 @@ public class ContentFragmentActions(InvocationContext invocationContext, IFileMa
         return new SearchContentFragmentResponse(fragments.Select(MapSearchItem));
     }
 
-    [Action("Download content fragment", Description = "Download a content fragment's master fields as interoperable HTML.")]
+    [Action("Download content fragment (experimental)", Description = "Download a content fragment's master fields as interoperable HTML.")]
     public async Task<DownloadContentFragmentResponse> DownloadContentFragments([ActionParameter] DownloadContentFragmentRequest input)
     {
         ValidateDamPath(input.ContentId);
@@ -66,7 +66,7 @@ public class ContentFragmentActions(InvocationContext invocationContext, IFileMa
         return new DownloadContentFragmentResponse(fileReference);
     }
 
-    [Action("Check out content fragment", Description = "Check out a content fragment so it can be edited exclusively by the current user.")]
+    [Action("Check out content fragment (experimental)", Description = "Check out a content fragment so it can be edited exclusively by the current user.")]
     public async Task<ContentFragmentCheckoutStateResponse> CheckOutContentFragment([ActionParameter] ContentFragmentPathRequest input)
     {
         ValidateDamPath(input.ContentId);
@@ -82,7 +82,7 @@ public class ContentFragmentActions(InvocationContext invocationContext, IFileMa
         };
     }
 
-    [Action("Check in content fragment", Description = "Check in a content fragment to release its lock. If it is not checked out, the request succeeds without changes.")]
+    [Action("Check in content fragment (experimental)", Description = "Check in a content fragment to release its lock. If it is not checked out, the request succeeds without changes.")]
     public async Task<ContentFragmentCheckoutStateResponse> CheckInContentFragment([ActionParameter] ContentFragmentPathRequest input)
     {
         ValidateDamPath(input.ContentId);
@@ -98,7 +98,7 @@ public class ContentFragmentActions(InvocationContext invocationContext, IFileMa
         };
     }
 
-    [Action("Upload content fragment", Description = "Create or update a translated content fragment variation from HTML or XLIFF.")]
+    [Action("Upload content fragment (experimental)", Description = "Create or update a translated content fragment variation from HTML or XLIFF.")]
     public async Task<UploadContentFragmentResponse> UploadContentFragments([ActionParameter] UploadContentFragmentRequest input)
     {
         if (string.IsNullOrWhiteSpace(input.VariationTitle))
