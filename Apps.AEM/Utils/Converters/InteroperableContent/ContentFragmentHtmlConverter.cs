@@ -1,3 +1,4 @@
+using Apps.AEM.Models.Entities;
 using HtmlAgilityPack;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -11,6 +12,13 @@ public static class ContentFragmentHtmlConverter
 
     public static string ConvertToHtml(JArray fields, string sourcePath, IEnumerable<string>? excludedFields = null)
     {
+        return ConvertToHtml(
+            [new ContentFragmentHtmlEntity(sourcePath, fields, false)],
+            excludedFields);
+    }
+
+    public static string ConvertToHtml(IEnumerable<ContentFragmentHtmlEntity> entities, IEnumerable<string>? excludedFields = null)
+    {
         var excludedFieldNames = new HashSet<string>(DefaultExcludedFieldNames, StringComparer.OrdinalIgnoreCase);
 
         if (excludedFields != null)
@@ -20,6 +28,10 @@ public static class ContentFragmentHtmlConverter
                 excludedFieldNames.Add(excludedField.Trim());
             }
         }
+
+        var contentFragmentEntities = entities.ToList();
+        var rootEntity = contentFragmentEntities.SingleOrDefault(entity => !entity.ReferenceContent)
+            ?? throw new ArgumentException("Exactly one root content fragment entity is required.", nameof(entities));
 
         var doc = new HtmlDocument();
         var htmlNode = doc.CreateElement("html");
@@ -34,29 +46,49 @@ public static class ContentFragmentHtmlConverter
 
         var metaSourcePath = doc.CreateElement("meta");
         metaSourcePath.SetAttributeValue("name", "blackbird-source-path");
-        metaSourcePath.SetAttributeValue("content", sourcePath);
+        metaSourcePath.SetAttributeValue("content", rootEntity.SourcePath);
         headNode.AppendChild(metaSourcePath);
 
         var bodyNode = doc.CreateElement("body");
         htmlNode.AppendChild(bodyNode);
 
-        var rootDivNode = doc.CreateElement("div");
-        rootDivNode.SetAttributeValue("data-root", "true");
-        rootDivNode.SetAttributeValue("data-source-path", sourcePath);
+        foreach (var entity in contentFragmentEntities)
+        {
+            AppendContentFragment(bodyNode, doc, entity, excludedFieldNames);
+        }
+
+        return "<!DOCTYPE html>\n" + doc.DocumentNode.OuterHtml;
+    }
+
+    private static void AppendContentFragment(
+        HtmlNode bodyNode,
+        HtmlDocument doc,
+        ContentFragmentHtmlEntity entity,
+        ISet<string> excludedFieldNames)
+    {
+        var fragmentDivNode = doc.CreateElement("div");
+
+        if (entity.ReferenceContent)
+        {
+            fragmentDivNode.SetAttributeValue("data-reference-path", entity.SourcePath);
+        }
+        else
+        {
+            fragmentDivNode.SetAttributeValue("data-root", "true");
+            fragmentDivNode.SetAttributeValue("data-source-path", entity.SourcePath);
+        }
 
         var originalJson = new JObject
         {
-            ["fields"] = fields.DeepClone()
+            ["fields"] = entity.Fields.DeepClone()
         };
 
-        rootDivNode.SetAttributeValue(
+        fragmentDivNode.SetAttributeValue(
             "data-original-json",
             HttpUtility.HtmlEncode(originalJson.ToString(Formatting.None)));
 
-        AppendTranslatableFields(rootDivNode, doc, fields, excludedFieldNames);
-        bodyNode.AppendChild(rootDivNode);
-
-        return "<!DOCTYPE html>\n" + doc.DocumentNode.OuterHtml;
+        AppendTranslatableFields(fragmentDivNode, doc, entity.Fields, excludedFieldNames);
+        bodyNode.AppendChild(fragmentDivNode);
     }
 
     private static void AppendTranslatableFields(
@@ -112,7 +144,7 @@ public static class ContentFragmentHtmlConverter
     private static bool IsTranslatableField(JObject field)
     {
         var fieldType = field["type"]?.ToString();
-        return fieldType is "text" or "long-text" or "enumeration";
+        return fieldType is "text" or "long-text";
     }
 
     private static bool IsRichTextField(JObject field)

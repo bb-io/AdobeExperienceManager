@@ -52,10 +52,10 @@ public abstract class BaseDataHandlerTests : TestBase
 
     private void LogItems(IEnumerable<DataSourceItem> items)
     {
-        TestContext.WriteLine($"Total items: {items.Count()}");
+        TestContext?.WriteLine($"Total items: {items.Count()}");
         foreach (var item in items)
         {
-            TestContext.WriteLine($"ID: {item.Value}, Name: {item.DisplayName}");
+            TestContext?.WriteLine($"ID: {item.Value}, Name: {item.DisplayName}");
         }
     }
 }

@@ -1,4 +1,5 @@
 using Apps.AEM.Models.Dtos;
+using Apps.AEM.Models.Entities;
 using Apps.AEM.Models.Requests;
 using Apps.AEM.Models.Responses;
 using Apps.AEM.Utils.Converters;
@@ -26,6 +27,7 @@ public class ContentFragmentActions(InvocationContext invocationContext, IFileMa
     private const string FragmentsEndpoint = "/adobe/sites/cf/fragments";
     private const int DefaultSearchMaxItems = 100;
     private const int MaxPageSize = 50;
+    private const int DefaultMaxReferenceNestingLevel = 10;
 
     [Action("Search content fragments (experimental)", Description = "Search for content fragments by DAM path prefix and tags.")]
     public async Task<SearchContentFragmentResponse> SearchContentFragments([ActionParameter] SearchContentFragmentsRequest input)
@@ -36,10 +38,18 @@ public class ContentFragmentActions(InvocationContext invocationContext, IFileMa
 
         ValidateDamPath(rootPath);
 
-        var maxItems = input.MaxItems is > 0 ? input.MaxItems.Value : DefaultSearchMaxItems;
-        var fragments = await SearchFragmentsAsync(rootPath, input.Tags, maxItems);
+        var fragments = await SearchFragmentsAsync(rootPath, input.Tags, input.MaxItems ?? DefaultSearchMaxItems);
 
-        return new SearchContentFragmentResponse(fragments.Select(MapSearchItem));
+        return new SearchContentFragmentResponse(fragments.Select(f => new ContentFragmentItemResponse
+        {
+            ContentId = f.Path,
+            FragmentId = f.Id,
+            Title = f.Title,
+            ModelName = f.Model?.Title ?? f.Model?.Name ?? string.Empty,
+            Status = f.Status,
+            Created = f.Created?.At,
+            Modified = f.Modified?.At
+        }));
     }
 
     [Action("Download content fragment (experimental)", Description = "Download a content fragment's master fields as interoperable HTML.")]
@@ -53,9 +63,9 @@ public class ContentFragmentActions(InvocationContext invocationContext, IFileMa
             await CheckOutContentFragment(new() { ContentId = input.ContentId });
 
         var fragment = await GetFragmentAsync(fragmentLookup.Id);
-        
+        var exportEntities = await BuildDownloadEntitiesAsync(fragment, input);
 
-        var html = ContentFragmentHtmlConverter.ConvertToHtml(fragment.Fields, fragment.Path, input.ExcludedFields);
+        var html = ContentFragmentHtmlConverter.ConvertToHtml(exportEntities, input.ExcludedFields);
         var fileName = ContentPathToFilenameConverter.PathToFilename(fragment.Path);
 
         var fileReference = await fileManagementClient.UploadAsync(
@@ -117,57 +127,120 @@ public class ContentFragmentActions(InvocationContext invocationContext, IFileMa
         var rootEntity = entities.SingleOrDefault(entity => !entity.ReferenceContent)
             ?? throw new PluginMisconfigurationException("The uploaded file did not contain a root content fragment payload.");
 
-        var fields = rootEntity.TargetContent["fields"] as JArray
-            ?? throw new PluginMisconfigurationException("The uploaded file did not contain content fragment fields.");
-
-        var targetPath = !string.IsNullOrWhiteSpace(input.ContentId)
-            ? input.ContentId
-            : rootEntity.SourcePath;
-
-        if (string.IsNullOrWhiteSpace(targetPath))
-            throw new PluginMisconfigurationException("The uploaded file did not contain a source content fragment path.");
-
-        ValidateDamPath(targetPath);
-
-        var fragmentLookup = await FindFragmentByPathAsync(targetPath);
+        string? rootVariationName = null;
+        string? rootContentId = null;
+        var rootVariationCreated = false;
+        var updatedReferenceCount = 0;
+        var checkedOutFragments = new List<(string id, string path)>();
+        var checkedOutFragmentIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         try
         {
-            await UpdateFragmentCheckoutStateAsync(fragmentLookup.Id, true);
-            var matchingVariation = await FindVariationByTitleAsync(fragmentLookup.Id, input.VariationTitle);
-
-            ContentFragmentVariationDto variation;
-            string etag;
-            var isCreated = false;
-
-            if (matchingVariation != null)
+            foreach (var entity in entities)
             {
-                (variation, etag) = await GetVariationAsync(fragmentLookup.Id, matchingVariation.Name);
-            }
-            else
-            {
-                (variation, etag) = await CreateVariationAsync(fragmentLookup.Id, input.VariationTitle, input.VariationDescription);
-                isCreated = true;
+                var fields = entity.TargetContent["fields"] as JArray
+                    ?? throw new PluginMisconfigurationException("The uploaded file did not contain content fragment fields.");
+
+                if (string.IsNullOrWhiteSpace(entity.SourcePath))
+                    throw new PluginMisconfigurationException("The uploaded file did not contain a source content fragment path.");
+
+                ValidateDamPath(entity.SourcePath);
+
+                var fragmentLookup = await FindFragmentByPathAsync(entity.SourcePath);
+
+                if (checkedOutFragmentIds.Add(fragmentLookup.Id))
+                {
+                    await UpdateFragmentCheckoutStateAsync(fragmentLookup.Id, true);
+                    checkedOutFragments.Add((fragmentLookup.Id, fragmentLookup.Path));
+                }
+
+                var matchingVariation = await FindVariationByTitleAsync(fragmentLookup.Id, input.VariationTitle);
+
+                ContentFragmentVariationDto variation;
+                string etag;
+                var isCreated = false;
+
+                if (matchingVariation != null)
+                {
+                    (variation, etag) = await GetVariationAsync(fragmentLookup.Id, matchingVariation.Name);
+                }
+                else
+                {
+                    (variation, etag) = await CreateVariationAsync(fragmentLookup.Id, input.VariationTitle, input.VariationDescription);
+                    isCreated = true;
+                }
+
+                await PatchVariationFieldsAsync(fragmentLookup.Id, variation.Name, etag, fields);
+
+                if (entity.ReferenceContent)
+                {
+                    updatedReferenceCount++;
+                    continue;
+                }
+
+                rootContentId = fragmentLookup.Path;
+                rootVariationName = variation.Name;
+                rootVariationCreated = isCreated;
             }
 
-            await PatchVariationFieldsAsync(fragmentLookup.Id, variation.Name, etag, fields);
+            if (string.IsNullOrWhiteSpace(rootContentId) || string.IsNullOrWhiteSpace(rootVariationName))
+                throw new PluginMisconfigurationException("The uploaded file did not contain a root content fragment payload.");
 
             return new UploadContentFragmentResponse
             {
-                ContentId = fragmentLookup.Path,
-                VariationName = variation.Name,
-                Message = isCreated
-                    ? "Content fragment variation created and uploaded successfully."
-                    : "Content fragment variation uploaded successfully."
+                ContentId = rootContentId,
+                VariationName = rootVariationName,
+                Message = rootVariationCreated
+                    ? $"Content fragment variation created and uploaded successfully. Updated {updatedReferenceCount} referenced fragments."
+                    : $"Content fragment variation uploaded successfully. Updated {updatedReferenceCount} referenced fragments."
             };
         }
         finally
         {
             if (input.CheckIn == true)
             {
-                await UpdateFragmentCheckoutStateAsync(fragmentLookup.Id, false);
+                foreach (var (fragmentId, _) in checkedOutFragments)
+                {
+                    await UpdateFragmentCheckoutStateAsync(fragmentId, false);
+                }
             }
         }
+    }
+
+    private async Task<List<ContentFragmentHtmlEntity>> BuildDownloadEntitiesAsync(
+        ContentFragmentDto rootFragment,
+        DownloadContentFragmentRequest input)
+    {
+        var entities = new List<ContentFragmentHtmlEntity>
+        {
+            new(rootFragment.Path, rootFragment.Fields, false)
+        };
+
+        if (input.IncludeReferences != true)
+            return entities;
+
+        var maxReferenceNestingLevel = input.MaxReferenceNestingLevel ?? DefaultMaxReferenceNestingLevel;
+        if (maxReferenceNestingLevel < 0)
+            throw new PluginMisconfigurationException("'Max level of nesting included' cannot be negative.");
+
+        var excludedReferenceFields = input.ExcludedReferenceFields is null
+            ? new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            : input.ExcludedReferenceFields.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var excludedReferenceModels = input.ExcludedReferenceModels is null
+            ? new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            : input.ExcludedReferenceModels.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var processedPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { rootFragment.Path };
+
+        await AppendReferencedFragmentsAsync(
+            rootFragment.Fields,
+            currentDepth: 0,
+            maxReferenceNestingLevel,
+            excludedReferenceFields,
+            excludedReferenceModels,
+            processedPaths,
+            entities);
+
+        return entities;
     }
 
     private static string BuildSearchQuery(string rootPath, IEnumerable<string>? modelTags)
@@ -193,20 +266,6 @@ public class ContentFragmentActions(InvocationContext invocationContext, IFileMa
         };
 
         return query.ToString(Formatting.None);
-    }
-
-    private static ContentFragmentItemResponse MapSearchItem(ContentFragmentDto fragment)
-    {
-        return new ContentFragmentItemResponse
-        {
-            ContentId = fragment.Path,
-            FragmentId = fragment.Id,
-            Title = fragment.Title,
-            ModelName = fragment.Model?.Title ?? fragment.Model?.Name ?? string.Empty,
-            Status = fragment.Status,
-            Created = fragment.Created?.At,
-            Modified = fragment.Modified?.At
-        };
     }
 
     private static void ValidateDamPath(string path)
@@ -354,6 +413,68 @@ public class ContentFragmentActions(InvocationContext invocationContext, IFileMa
         await Client.ExecuteWithErrorHandling(request);
     }
 
+    private async Task AppendReferencedFragmentsAsync(
+        JArray fields,
+        int currentDepth,
+        int maxReferenceNestingLevel,
+        ISet<string> excludedReferenceFields,
+        ISet<string> excludedReferenceModels,
+        ISet<string> processedPaths,
+        List<ContentFragmentHtmlEntity> entities)
+    {
+        var nextDepth = currentDepth + 1;
+        if (nextDepth > maxReferenceNestingLevel)
+            return;
+
+        foreach (var fieldToken in fields)
+        {
+            if (fieldToken is not JObject field)
+                continue;
+
+            if (!IsContentFragmentReferenceField(field))
+                continue;
+
+            var fieldName = field["name"]?.ToString();
+            if (!string.IsNullOrWhiteSpace(fieldName) && excludedReferenceFields.Contains(fieldName))
+                continue;
+
+            var values = field["values"]?.Values<string>()
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .Select(value => value!.Trim())
+                .ToList();
+
+            if (values == null || values.Count == 0)
+                continue;
+
+            foreach (var referencePath in values)
+            {
+                if (processedPaths.Contains(referencePath))
+                    continue;
+
+                ValidateDamPath(referencePath);
+
+                var fragmentLookup = await FindFragmentByPathAsync(referencePath);
+                var referencedFragment = await GetFragmentAsync(fragmentLookup.Id);
+                processedPaths.Add(referencedFragment.Path);
+
+                var referencedModelName = referencedFragment.Model?.Name;
+                if (!string.IsNullOrWhiteSpace(referencedModelName) && excludedReferenceModels.Contains(referencedModelName))
+                    continue;
+
+                entities.Add(new ContentFragmentHtmlEntity(referencedFragment.Path, referencedFragment.Fields, true));
+
+                await AppendReferencedFragmentsAsync(
+                    referencedFragment.Fields,
+                    nextDepth,
+                    maxReferenceNestingLevel,
+                    excludedReferenceFields,
+                    excludedReferenceModels,
+                    processedPaths,
+                    entities);
+            }
+        }
+    }
+
     private async Task UpdateFragmentCheckoutStateAsync(string fragmentId, bool checkedOut)
     {
         var (_, etag) = await GetFragmentWithEtagAsync(fragmentId);
@@ -396,6 +517,11 @@ public class ContentFragmentActions(InvocationContext invocationContext, IFileMa
                ?? throw new PluginApplicationException(errorMessage);
     }
 
+    private static bool IsContentFragmentReferenceField(JObject field)
+    {
+        return string.Equals(field["type"]?.ToString(), "content-fragment", StringComparison.OrdinalIgnoreCase);
+    }
+
     private async Task<ContentFragmentDto?> TryFindFragmentByPathAsync(string requestPath, string expectedAbsolutePath)
     {
         var request = new RestRequest(FragmentsEndpoint)
@@ -419,41 +545,14 @@ public class ContentFragmentActions(InvocationContext invocationContext, IFileMa
         return null;
     }
 
-    private static bool FragmentMatchesAnyTag(ContentFragmentDto fragment, IEnumerable<string> requestedTags)
+    private static bool TryGetRelativeDamPath(string path, out string relativePath)
     {
-        var requestedTagSet = new HashSet<string>(requestedTags, StringComparer.OrdinalIgnoreCase);
+        relativePath = string.Empty;
 
-        if (fragment.Fields
-                .OfType<JObject>()
-                .Where(field => string.Equals(field["type"]?.ToString(), "tag", StringComparison.OrdinalIgnoreCase))
-                .SelectMany(field => field["values"]?.Values<string>() ?? [])
-                .Any(tag => tag is not null && requestedTagSet.Contains(tag)))
-        {
-            return true;
-        }
-
-        if (fragment.Tags
-                .OfType<JObject>()
-                .Select(tag => tag["id"]?.ToString())
-                .Where(tagId => !string.IsNullOrWhiteSpace(tagId))
-                .Any(tagId => requestedTagSet.Contains(tagId!)))
-        {
-            return true;
-        }
-
-        return fragment.FieldTags
-            .OfType<JObject>()
-            .Select(tag => tag["id"]?.ToString())
-            .Where(tagId => !string.IsNullOrWhiteSpace(tagId))
-            .Any(tagId => requestedTagSet.Contains(tagId!));
-    }
-
-    private static string GetRelativeDamPath(string path)
-    {
         if (!path.StartsWith(ContentDamRoot, StringComparison.OrdinalIgnoreCase))
-            throw new PluginMisconfigurationException("Content fragment path must start with /content/dam.");
+            return false;
 
-        var relativePath = path.Length == ContentDamRoot.Length
+        relativePath = path.Length == ContentDamRoot.Length
             ? "/"
             : path.Substring(ContentDamRoot.Length);
 
@@ -462,17 +561,6 @@ public class ContentFragmentActions(InvocationContext invocationContext, IFileMa
             relativePath = "/";
         }
 
-        return relativePath;
-    }
-
-    private static bool TryGetRelativeDamPath(string path, out string relativePath)
-    {
-        relativePath = string.Empty;
-
-        if (!path.StartsWith(ContentDamRoot, StringComparison.OrdinalIgnoreCase))
-            return false;
-
-        relativePath = GetRelativeDamPath(path);
         return true;
     }
 }
