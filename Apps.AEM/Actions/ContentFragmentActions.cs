@@ -38,10 +38,18 @@ public class ContentFragmentActions(InvocationContext invocationContext, IFileMa
 
         ValidateDamPath(rootPath);
 
-        var maxItems = input.MaxItems is > 0 ? input.MaxItems.Value : DefaultSearchMaxItems;
-        var fragments = await SearchFragmentsAsync(rootPath, input.Tags, maxItems);
+        var fragments = await SearchFragmentsAsync(rootPath, input.Tags, input.MaxItems ?? DefaultSearchMaxItems);
 
-        return new SearchContentFragmentResponse(fragments.Select(MapSearchItem));
+        return new SearchContentFragmentResponse(fragments.Select(f => new ContentFragmentItemResponse
+        {
+            ContentId = f.Path,
+            FragmentId = f.Id,
+            Title = f.Title,
+            ModelName = f.Model?.Title ?? f.Model?.Name ?? string.Empty,
+            Status = f.Status,
+            Created = f.Created?.At,
+            Modified = f.Modified?.At
+        }));
     }
 
     [Action("Download content fragment (experimental)", Description = "Download a content fragment's master fields as interoperable HTML.")]
@@ -258,20 +266,6 @@ public class ContentFragmentActions(InvocationContext invocationContext, IFileMa
         };
 
         return query.ToString(Formatting.None);
-    }
-
-    private static ContentFragmentItemResponse MapSearchItem(ContentFragmentDto fragment)
-    {
-        return new ContentFragmentItemResponse
-        {
-            ContentId = fragment.Path,
-            FragmentId = fragment.Id,
-            Title = fragment.Title,
-            ModelName = fragment.Model?.Title ?? fragment.Model?.Name ?? string.Empty,
-            Status = fragment.Status,
-            Created = fragment.Created?.At,
-            Modified = fragment.Modified?.At
-        };
     }
 
     private static void ValidateDamPath(string path)
