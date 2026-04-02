@@ -75,6 +75,12 @@ public class ContentFragmentVariationDto
     public ContentFragmentAuthoringInfoDto? Modified { get; set; }
 }
 
+public class ContentFragmentPermissionsDto
+{
+    [JsonProperty("items")]
+    public List<string> Items { get; set; } = [];
+}
+
 public class ContentFragmentAuthoringInfoDto
 {
     [JsonProperty("at")]
