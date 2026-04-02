@@ -141,16 +141,12 @@ public class ContentFragmentActions(InvocationContext invocationContext, IFileMa
                 var fields = entity.TargetContent["fields"] as JArray
                     ?? throw new PluginMisconfigurationException("The uploaded file did not contain content fragment fields.");
 
-                var targetPath = !entity.ReferenceContent && !string.IsNullOrWhiteSpace(input.ContentId)
-                    ? input.ContentId
-                    : entity.SourcePath;
-
-                if (string.IsNullOrWhiteSpace(targetPath))
+                if (string.IsNullOrWhiteSpace(entity.SourcePath))
                     throw new PluginMisconfigurationException("The uploaded file did not contain a source content fragment path.");
 
-                ValidateDamPath(targetPath);
+                ValidateDamPath(entity.SourcePath);
 
-                var fragmentLookup = await FindFragmentByPathAsync(targetPath);
+                var fragmentLookup = await FindFragmentByPathAsync(entity.SourcePath);
 
                 if (checkedOutFragmentIds.Add(fragmentLookup.Id))
                 {

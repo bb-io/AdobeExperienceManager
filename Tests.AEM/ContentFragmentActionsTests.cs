@@ -36,7 +36,7 @@ public class ContentFragmentActionsTests : TestBase
         };
 
         var result = await actions.SearchContentFragments(request);
-        TestContext.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
+        TestContext?.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
 
         Assert.IsTrue(result.Items.Any(), "No content fragments were returned.");
         Assert.IsTrue(
@@ -57,7 +57,7 @@ public class ContentFragmentActionsTests : TestBase
         };
 
         var result = await actions.SearchContentFragments(request);
-        TestContext.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
+        TestContext?.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
 
         Assert.IsTrue(result.Items.Any(), "No content fragments were returned for the requested tag.");
     }
@@ -85,7 +85,7 @@ public class ContentFragmentActionsTests : TestBase
             html.Contains("data-field-name=\"previewUrl\"", StringComparison.OrdinalIgnoreCase),
             "The generated HTML body should exclude the previewUrl field by default.");
 
-        TestContext.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
+        TestContext?.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
     }
 
     [TestMethod]
@@ -117,9 +117,11 @@ public class ContentFragmentActionsTests : TestBase
 
         var result = await actions.DownloadContentFragments(new DownloadContentFragmentRequest
         {
-            ContentId = SampleContentFragmentPath,
+            ContentId = "/content/dam/raye/fragments/articles/library/india-educational-series-medical-device-registration-and-post-market-compliance",
             IncludeReferences = true,
-            MaxReferenceNestingLevel = 1
+            ExcludedFields = ["history", "previewUrl"],
+            ExcludedReferenceFields = ["owner", "author", "countries", "featuredCountries"],
+            
         });
 
         var html = ReadGeneratedOutput(result.Content.Name);
@@ -217,17 +219,15 @@ public class ContentFragmentActionsTests : TestBase
                 Content = BuildFileReference(HtmlFixtureName, "text/html"),
                 VariationTitle = HtmlVariationTitle,
                 VariationDescription = "Created by the Blackbird integration test.",
-                ContentId = SampleContentFragmentPath
             });
 
             Assert.IsNotNull(result);
-            Assert.AreEqual(SampleContentFragmentPath, result.ContentId);
             Assert.IsFalse(string.IsNullOrWhiteSpace(result.VariationName), "Variation name should not be empty.");
             Assert.IsTrue(
                 result.Message.Contains("uploaded successfully", StringComparison.OrdinalIgnoreCase),
                 "Upload response did not contain a success message.");
 
-            TestContext.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
+            TestContext?.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
         }
         catch (PluginMisconfigurationException ex) when (ex.Message.Contains("checked out", StringComparison.OrdinalIgnoreCase))
         {
@@ -248,17 +248,15 @@ public class ContentFragmentActionsTests : TestBase
                 Content = BuildFileReference(XliffFixtureName, "application/xliff+xml"),
                 VariationTitle = XliffVariationTitle,
                 VariationDescription = "Created by the Blackbird integration test from XLIFF.",
-                ContentId = SampleContentFragmentPath
             });
 
             Assert.IsNotNull(result);
-            Assert.AreEqual(SampleContentFragmentPath, result.ContentId);
             Assert.IsFalse(string.IsNullOrWhiteSpace(result.VariationName), "Variation name should not be empty.");
             Assert.IsTrue(
                 result.Message.Contains("uploaded successfully", StringComparison.OrdinalIgnoreCase),
                 "Upload response did not contain a success message.");
 
-            TestContext.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
+            TestContext?.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
         }
         catch (PluginMisconfigurationException ex) when (ex.Message.Contains("checked out", StringComparison.OrdinalIgnoreCase))
         {
@@ -290,11 +288,9 @@ public class ContentFragmentActionsTests : TestBase
                 Content = BuildFileReference(dynamicHtmlFixtureName, "text/html"),
                 VariationTitle = HtmlVariationTitle + " References",
                 VariationDescription = "Created by the Blackbird integration test with referenced content fragments.",
-                ContentId = SampleContentFragmentPath
             });
 
             Assert.IsNotNull(result);
-            Assert.AreEqual(SampleContentFragmentPath, result.ContentId);
             Assert.IsTrue(
                 result.Message.Contains("Updated ", StringComparison.OrdinalIgnoreCase)
                 && !result.Message.Contains("Updated 0 referenced fragments", StringComparison.OrdinalIgnoreCase),
@@ -336,7 +332,6 @@ public class ContentFragmentActionsTests : TestBase
                 Content = BuildFileReference(dynamicXliffFixtureName, "application/xliff+xml"),
                 VariationTitle = XliffVariationTitle + " References",
                 VariationDescription = "Created by the Blackbird integration test from XLIFF with referenced content fragments.",
-                ContentId = SampleContentFragmentPath
             });
 
             Assert.IsNotNull(result);
