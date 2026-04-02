@@ -227,8 +227,12 @@ public class ContentFragmentActions(InvocationContext invocationContext, IFileMa
         if (maxReferenceNestingLevel < 0)
             throw new PluginMisconfigurationException("'Max level of nesting included' cannot be negative.");
 
-        var excludedReferenceFields = ToCaseInsensitiveSet(input.ExcludedReferenceFields);
-        var excludedReferenceModels = ToCaseInsensitiveSet(input.ExcludedReferenceModels);
+        var excludedReferenceFields = input.ExcludedReferenceFields is null
+            ? new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            : input.ExcludedReferenceFields.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var excludedReferenceModels = input.ExcludedReferenceModels is null
+            ? new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            : input.ExcludedReferenceModels.ToHashSet(StringComparer.OrdinalIgnoreCase);
         var processedPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { rootFragment.Path };
 
         await AppendReferencedFragmentsAsync(
@@ -517,21 +521,6 @@ public class ContentFragmentActions(InvocationContext invocationContext, IFileMa
                ?? throw new PluginApplicationException(errorMessage);
     }
 
-    private static HashSet<string> ToCaseInsensitiveSet(IEnumerable<string>? values)
-    {
-        var result = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-        if (values == null)
-            return result;
-
-        foreach (var value in values.Where(value => !string.IsNullOrWhiteSpace(value)))
-        {
-            result.Add(value.Trim());
-        }
-
-        return result;
-    }
-
     private static bool IsContentFragmentReferenceField(JObject field)
     {
         return string.Equals(field["type"]?.ToString(), "content-fragment", StringComparison.OrdinalIgnoreCase);
@@ -560,41 +549,14 @@ public class ContentFragmentActions(InvocationContext invocationContext, IFileMa
         return null;
     }
 
-    private static bool FragmentMatchesAnyTag(ContentFragmentDto fragment, IEnumerable<string> requestedTags)
+    private static bool TryGetRelativeDamPath(string path, out string relativePath)
     {
-        var requestedTagSet = new HashSet<string>(requestedTags, StringComparer.OrdinalIgnoreCase);
+        relativePath = string.Empty;
 
-        if (fragment.Fields
-                .OfType<JObject>()
-                .Where(field => string.Equals(field["type"]?.ToString(), "tag", StringComparison.OrdinalIgnoreCase))
-                .SelectMany(field => field["values"]?.Values<string>() ?? [])
-                .Any(tag => tag is not null && requestedTagSet.Contains(tag)))
-        {
-            return true;
-        }
-
-        if (fragment.Tags
-                .OfType<JObject>()
-                .Select(tag => tag["id"]?.ToString())
-                .Where(tagId => !string.IsNullOrWhiteSpace(tagId))
-                .Any(tagId => requestedTagSet.Contains(tagId!)))
-        {
-            return true;
-        }
-
-        return fragment.FieldTags
-            .OfType<JObject>()
-            .Select(tag => tag["id"]?.ToString())
-            .Where(tagId => !string.IsNullOrWhiteSpace(tagId))
-            .Any(tagId => requestedTagSet.Contains(tagId!));
-    }
-
-    private static string GetRelativeDamPath(string path)
-    {
         if (!path.StartsWith(ContentDamRoot, StringComparison.OrdinalIgnoreCase))
-            throw new PluginMisconfigurationException("Content fragment path must start with /content/dam.");
+            return false;
 
-        var relativePath = path.Length == ContentDamRoot.Length
+        relativePath = path.Length == ContentDamRoot.Length
             ? "/"
             : path.Substring(ContentDamRoot.Length);
 
@@ -603,17 +565,6 @@ public class ContentFragmentActions(InvocationContext invocationContext, IFileMa
             relativePath = "/";
         }
 
-        return relativePath;
-    }
-
-    private static bool TryGetRelativeDamPath(string path, out string relativePath)
-    {
-        relativePath = string.Empty;
-
-        if (!path.StartsWith(ContentDamRoot, StringComparison.OrdinalIgnoreCase))
-            return false;
-
-        relativePath = GetRelativeDamPath(path);
         return true;
     }
 }
