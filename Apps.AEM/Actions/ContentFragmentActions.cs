@@ -108,6 +108,20 @@ public class ContentFragmentActions(InvocationContext invocationContext, IFileMa
         };
     }
 
+    [Action("Check content fragment permission", Description = "Retrieve the current user's permissions for a content fragment.")]
+    public async Task<GetContentFragmentPermissionsResponse> CheckContentFragmentPermission([ActionParameter] ContentFragmentPathRequest input)
+    {
+        ValidateDamPath(input.ContentId);
+
+        var fragmentLookup = await FindFragmentByPathAsync(input.ContentId);
+        var permissions = await GetFragmentPermissionsAsync(fragmentLookup.Id);
+
+        return new GetContentFragmentPermissionsResponse
+        {
+            Permissions = permissions
+        };
+    }
+
     [Action("Upload content fragment (experimental)", Description = "Create or update a translated content fragment variation from HTML or XLIFF.")]
     public async Task<UploadContentFragmentResponse> UploadContentFragments([ActionParameter] UploadContentFragmentRequest input)
     {
@@ -243,27 +257,19 @@ public class ContentFragmentActions(InvocationContext invocationContext, IFileMa
         return entities;
     }
 
-    private static string BuildSearchQuery(string rootPath, IEnumerable<string>? modelTags)
+    private static string BuildSearchQuery(string rootPath, IEnumerable<string>? tags)
     {
-        var filter = new JObject
-        {
-            ["path"] = rootPath
-        };
+        var filter = new JObject { ["path"] = rootPath };
 
-        var requestedModelTags = modelTags?
+        var requestedTags = tags?
             .Where(tag => !string.IsNullOrWhiteSpace(tag))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToArray();
 
-        if (requestedModelTags?.Length > 0)
-        {
-            filter["modelTags"] = new JArray(requestedModelTags);
-        }
+        if (requestedTags?.Length > 0)
+            filter["tags"] = new JArray(requestedTags);
 
-        var query = new JObject
-        {
-            ["filter"] = filter
-        };
+        var query = new JObject { ["filter"] = filter };
 
         return query.ToString(Formatting.None);
     }
@@ -387,6 +393,17 @@ public class ContentFragmentActions(InvocationContext invocationContext, IFileMa
             $"Failed to create variation '{variationTitle}'.");
 
         return (variation, GetEtag(response));
+    }
+
+    private async Task<IEnumerable<string>> GetFragmentPermissionsAsync(string fragmentId)
+    {
+        var request = new RestRequest($"{FragmentsEndpoint}/{fragmentId}/permissions");
+        var response = await Client.ExecuteWithErrorHandling(request);
+        var permissions = DeserializeResponse<ContentFragmentPermissionsDto>(
+            response,
+            $"Failed to retrieve permissions for content fragment '{fragmentId}'.");
+
+        return permissions.Items;
     }
 
     private async Task PatchVariationFieldsAsync(string fragmentId, string variationName, string etag, JArray fields)

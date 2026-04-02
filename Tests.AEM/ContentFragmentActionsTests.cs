@@ -90,6 +90,22 @@ public class ContentFragmentActionsTests : TestBase
 
     [TestMethod]
     [DynamicData(nameof(AllInvocationContexts), DynamicDataDisplayName = nameof(GetConnectionTypeName))]
+    public async Task CheckContentFragmentPermission_WithValidPath_ShouldReturnPermissions(InvocationContext context)
+    {
+        var actions = new ContentFragmentActions(context, FileManager);
+
+        var result = await actions.CheckContentFragmentPermission(new ContentFragmentPathRequest
+        {
+            ContentId = SampleContentFragmentPath
+        });
+
+        Assert.IsNotNull(result);
+
+        TestContext?.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
+    }
+
+    [TestMethod]
+    [DynamicData(nameof(AllInvocationContexts), DynamicDataDisplayName = nameof(GetConnectionTypeName))]
     public async Task DownloadContentFragment_WithExcludedFields_ShouldOmitRequestedFieldFromHtmlBody(InvocationContext context)
     {
         var actions = new ContentFragmentActions(context, FileManager);
