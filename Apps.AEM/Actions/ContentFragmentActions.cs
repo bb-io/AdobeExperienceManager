@@ -1,4 +1,5 @@
 using Apps.AEM.Models.Dtos;
+using Apps.AEM.Models.Entities;
 using Apps.AEM.Models.Requests;
 using Apps.AEM.Models.Responses;
 using Apps.AEM.Utils.Converters;
@@ -26,6 +27,7 @@ public class ContentFragmentActions(InvocationContext invocationContext, IFileMa
     private const string FragmentsEndpoint = "/adobe/sites/cf/fragments";
     private const int DefaultSearchMaxItems = 100;
     private const int MaxPageSize = 50;
+    private const int DefaultMaxReferenceNestingLevel = 10;
 
     [Action("Search content fragments (experimental)", Description = "Search for content fragments by DAM path prefix and tags.")]
     public async Task<SearchContentFragmentResponse> SearchContentFragments([ActionParameter] SearchContentFragmentsRequest input)
@@ -53,9 +55,9 @@ public class ContentFragmentActions(InvocationContext invocationContext, IFileMa
             await CheckOutContentFragment(new() { ContentId = input.ContentId });
 
         var fragment = await GetFragmentAsync(fragmentLookup.Id);
-        
+        var exportEntities = await BuildDownloadEntitiesAsync(fragment, input);
 
-        var html = ContentFragmentHtmlConverter.ConvertToHtml(fragment.Fields, fragment.Path, input.ExcludedFields);
+        var html = ContentFragmentHtmlConverter.ConvertToHtml(exportEntities, input.ExcludedFields);
         var fileName = ContentPathToFilenameConverter.PathToFilename(fragment.Path);
 
         var fileReference = await fileManagementClient.UploadAsync(
@@ -117,57 +119,120 @@ public class ContentFragmentActions(InvocationContext invocationContext, IFileMa
         var rootEntity = entities.SingleOrDefault(entity => !entity.ReferenceContent)
             ?? throw new PluginMisconfigurationException("The uploaded file did not contain a root content fragment payload.");
 
-        var fields = rootEntity.TargetContent["fields"] as JArray
-            ?? throw new PluginMisconfigurationException("The uploaded file did not contain content fragment fields.");
-
-        var targetPath = !string.IsNullOrWhiteSpace(input.ContentId)
-            ? input.ContentId
-            : rootEntity.SourcePath;
-
-        if (string.IsNullOrWhiteSpace(targetPath))
-            throw new PluginMisconfigurationException("The uploaded file did not contain a source content fragment path.");
-
-        ValidateDamPath(targetPath);
-
-        var fragmentLookup = await FindFragmentByPathAsync(targetPath);
+        string? rootVariationName = null;
+        string? rootContentId = null;
+        var rootVariationCreated = false;
+        var updatedReferenceCount = 0;
+        var checkedOutFragments = new List<(string id, string path)>();
+        var checkedOutFragmentIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         try
         {
-            await UpdateFragmentCheckoutStateAsync(fragmentLookup.Id, true);
-            var matchingVariation = await FindVariationByTitleAsync(fragmentLookup.Id, input.VariationTitle);
-
-            ContentFragmentVariationDto variation;
-            string etag;
-            var isCreated = false;
-
-            if (matchingVariation != null)
+            foreach (var entity in entities)
             {
-                (variation, etag) = await GetVariationAsync(fragmentLookup.Id, matchingVariation.Name);
-            }
-            else
-            {
-                (variation, etag) = await CreateVariationAsync(fragmentLookup.Id, input.VariationTitle, input.VariationDescription);
-                isCreated = true;
+                var fields = entity.TargetContent["fields"] as JArray
+                    ?? throw new PluginMisconfigurationException("The uploaded file did not contain content fragment fields.");
+
+                var targetPath = !entity.ReferenceContent && !string.IsNullOrWhiteSpace(input.ContentId)
+                    ? input.ContentId
+                    : entity.SourcePath;
+
+                if (string.IsNullOrWhiteSpace(targetPath))
+                    throw new PluginMisconfigurationException("The uploaded file did not contain a source content fragment path.");
+
+                ValidateDamPath(targetPath);
+
+                var fragmentLookup = await FindFragmentByPathAsync(targetPath);
+
+                if (checkedOutFragmentIds.Add(fragmentLookup.Id))
+                {
+                    await UpdateFragmentCheckoutStateAsync(fragmentLookup.Id, true);
+                    checkedOutFragments.Add((fragmentLookup.Id, fragmentLookup.Path));
+                }
+
+                var matchingVariation = await FindVariationByTitleAsync(fragmentLookup.Id, input.VariationTitle);
+
+                ContentFragmentVariationDto variation;
+                string etag;
+                var isCreated = false;
+
+                if (matchingVariation != null)
+                {
+                    (variation, etag) = await GetVariationAsync(fragmentLookup.Id, matchingVariation.Name);
+                }
+                else
+                {
+                    (variation, etag) = await CreateVariationAsync(fragmentLookup.Id, input.VariationTitle, input.VariationDescription);
+                    isCreated = true;
+                }
+
+                await PatchVariationFieldsAsync(fragmentLookup.Id, variation.Name, etag, fields);
+
+                if (entity.ReferenceContent)
+                {
+                    updatedReferenceCount++;
+                    continue;
+                }
+
+                rootContentId = fragmentLookup.Path;
+                rootVariationName = variation.Name;
+                rootVariationCreated = isCreated;
             }
 
-            await PatchVariationFieldsAsync(fragmentLookup.Id, variation.Name, etag, fields);
+            if (string.IsNullOrWhiteSpace(rootContentId) || string.IsNullOrWhiteSpace(rootVariationName))
+                throw new PluginMisconfigurationException("The uploaded file did not contain a root content fragment payload.");
 
             return new UploadContentFragmentResponse
             {
-                ContentId = fragmentLookup.Path,
-                VariationName = variation.Name,
-                Message = isCreated
-                    ? "Content fragment variation created and uploaded successfully."
-                    : "Content fragment variation uploaded successfully."
+                ContentId = rootContentId,
+                VariationName = rootVariationName,
+                Message = rootVariationCreated
+                    ? $"Content fragment variation created and uploaded successfully. Updated {updatedReferenceCount} referenced fragments."
+                    : $"Content fragment variation uploaded successfully. Updated {updatedReferenceCount} referenced fragments."
             };
         }
         finally
         {
             if (input.CheckIn == true)
             {
-                await UpdateFragmentCheckoutStateAsync(fragmentLookup.Id, false);
+                foreach (var (fragmentId, _) in checkedOutFragments)
+                {
+                    await UpdateFragmentCheckoutStateAsync(fragmentId, false);
+                }
             }
         }
+    }
+
+    private async Task<List<ContentFragmentHtmlEntity>> BuildDownloadEntitiesAsync(
+        ContentFragmentDto rootFragment,
+        DownloadContentFragmentRequest input)
+    {
+        var entities = new List<ContentFragmentHtmlEntity>
+        {
+            new(rootFragment.Path, rootFragment.Fields, false)
+        };
+
+        if (input.IncludeReferences != true)
+            return entities;
+
+        var maxReferenceNestingLevel = input.MaxReferenceNestingLevel ?? DefaultMaxReferenceNestingLevel;
+        if (maxReferenceNestingLevel < 0)
+            throw new PluginMisconfigurationException("'Max level of nesting included' cannot be negative.");
+
+        var excludedReferenceFields = ToCaseInsensitiveSet(input.ExcludedReferenceFields);
+        var excludedReferenceModels = ToCaseInsensitiveSet(input.ExcludedReferenceModels);
+        var processedPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { rootFragment.Path };
+
+        await AppendReferencedFragmentsAsync(
+            rootFragment.Fields,
+            currentDepth: 0,
+            maxReferenceNestingLevel,
+            excludedReferenceFields,
+            excludedReferenceModels,
+            processedPaths,
+            entities);
+
+        return entities;
     }
 
     private static string BuildSearchQuery(string rootPath, IEnumerable<string>? modelTags)
@@ -354,6 +419,68 @@ public class ContentFragmentActions(InvocationContext invocationContext, IFileMa
         await Client.ExecuteWithErrorHandling(request);
     }
 
+    private async Task AppendReferencedFragmentsAsync(
+        JArray fields,
+        int currentDepth,
+        int maxReferenceNestingLevel,
+        ISet<string> excludedReferenceFields,
+        ISet<string> excludedReferenceModels,
+        ISet<string> processedPaths,
+        List<ContentFragmentHtmlEntity> entities)
+    {
+        var nextDepth = currentDepth + 1;
+        if (nextDepth > maxReferenceNestingLevel)
+            return;
+
+        foreach (var fieldToken in fields)
+        {
+            if (fieldToken is not JObject field)
+                continue;
+
+            if (!IsContentFragmentReferenceField(field))
+                continue;
+
+            var fieldName = field["name"]?.ToString();
+            if (!string.IsNullOrWhiteSpace(fieldName) && excludedReferenceFields.Contains(fieldName))
+                continue;
+
+            var values = field["values"]?.Values<string>()
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .Select(value => value!.Trim())
+                .ToList();
+
+            if (values == null || values.Count == 0)
+                continue;
+
+            foreach (var referencePath in values)
+            {
+                if (processedPaths.Contains(referencePath))
+                    continue;
+
+                ValidateDamPath(referencePath);
+
+                var fragmentLookup = await FindFragmentByPathAsync(referencePath);
+                var referencedFragment = await GetFragmentAsync(fragmentLookup.Id);
+                processedPaths.Add(referencedFragment.Path);
+
+                var referencedModelName = referencedFragment.Model?.Name;
+                if (!string.IsNullOrWhiteSpace(referencedModelName) && excludedReferenceModels.Contains(referencedModelName))
+                    continue;
+
+                entities.Add(new ContentFragmentHtmlEntity(referencedFragment.Path, referencedFragment.Fields, true));
+
+                await AppendReferencedFragmentsAsync(
+                    referencedFragment.Fields,
+                    nextDepth,
+                    maxReferenceNestingLevel,
+                    excludedReferenceFields,
+                    excludedReferenceModels,
+                    processedPaths,
+                    entities);
+            }
+        }
+    }
+
     private async Task UpdateFragmentCheckoutStateAsync(string fragmentId, bool checkedOut)
     {
         var (_, etag) = await GetFragmentWithEtagAsync(fragmentId);
@@ -394,6 +521,26 @@ public class ContentFragmentActions(InvocationContext invocationContext, IFileMa
 
         return JsonConvert.DeserializeObject<T>(response.Content)
                ?? throw new PluginApplicationException(errorMessage);
+    }
+
+    private static HashSet<string> ToCaseInsensitiveSet(IEnumerable<string>? values)
+    {
+        var result = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        if (values == null)
+            return result;
+
+        foreach (var value in values.Where(value => !string.IsNullOrWhiteSpace(value)))
+        {
+            result.Add(value.Trim());
+        }
+
+        return result;
+    }
+
+    private static bool IsContentFragmentReferenceField(JObject field)
+    {
+        return string.Equals(field["type"]?.ToString(), "content-fragment", StringComparison.OrdinalIgnoreCase);
     }
 
     private async Task<ContentFragmentDto?> TryFindFragmentByPathAsync(string requestPath, string expectedAbsolutePath)
