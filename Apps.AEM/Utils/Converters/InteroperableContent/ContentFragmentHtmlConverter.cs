@@ -144,7 +144,7 @@ public static class ContentFragmentHtmlConverter
     private static bool IsTranslatableField(JObject field)
     {
         var fieldType = field["type"]?.ToString();
-        return fieldType is "text" or "long-text" or "enumeration";
+        return fieldType is "text" or "long-text";
     }
 
     private static bool IsRichTextField(JObject field)
