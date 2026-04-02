@@ -243,27 +243,19 @@ public class ContentFragmentActions(InvocationContext invocationContext, IFileMa
         return entities;
     }
 
-    private static string BuildSearchQuery(string rootPath, IEnumerable<string>? modelTags)
+    private static string BuildSearchQuery(string rootPath, IEnumerable<string>? tags)
     {
-        var filter = new JObject
-        {
-            ["path"] = rootPath
-        };
+        var filter = new JObject { ["path"] = rootPath };
 
-        var requestedModelTags = modelTags?
+        var requestedTags = tags?
             .Where(tag => !string.IsNullOrWhiteSpace(tag))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToArray();
 
-        if (requestedModelTags?.Length > 0)
-        {
-            filter["modelTags"] = new JArray(requestedModelTags);
-        }
+        if (requestedTags?.Length > 0)
+            filter["tags"] = new JArray(requestedTags);
 
-        var query = new JObject
-        {
-            ["filter"] = filter
-        };
+        var query = new JObject { ["filter"] = filter };
 
         return query.ToString(Formatting.None);
     }

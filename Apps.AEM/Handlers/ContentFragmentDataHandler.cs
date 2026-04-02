@@ -36,7 +36,7 @@ public class ContentFragmentDataHandler(InvocationContext invocationContext) : I
 
             var filteredItems = response.Items
                 .Where(fragment => MatchesTitle(fragment, searchString))
-                .Select(fragment => new DataSourceItem(fragment.Path, fragment.Title));
+                .Select(fragment => new DataSourceItem(fragment.Path, GetFragmentModelShortenedName(fragment)));
 
             items.AddRange(filteredItems);
             cursor = response.Cursor;
@@ -87,5 +87,16 @@ public class ContentFragmentDataHandler(InvocationContext invocationContext) : I
         return string.IsNullOrWhiteSpace(searchString)
             || (!string.IsNullOrWhiteSpace(fragment.Title)
                 && fragment.Title.Contains(searchString, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static string GetFragmentModelShortenedName(ContentFragmentDto fragment)
+    {
+        if (fragment.Model?.Name is null)
+            return fragment.Title;
+
+        if (fragment.Model?.Name.Length <= 15)
+            return fragment.Model.Name + ": " + fragment.Title;
+
+        return fragment.Model?.Name.Substring(0, 15) + "…: " + fragment.Title ?? fragment.Title;
     }
 }
