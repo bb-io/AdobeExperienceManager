@@ -14,5 +14,5 @@ public class ContentFragmentTagAddedItemResponse
     public string FragmentId { get; set; } = string.Empty;
 
     [Display("Added tags")]
-    public List<string> AddedTags { get; set; } = [];
+    public IEnumerable<string> AddedTags { get; set; } = [];
 }
