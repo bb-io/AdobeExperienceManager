@@ -416,8 +416,3 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
         return (entities, errors);
     }
 }
-
-public class SearchContentIDResponse
-{
-    public List<string> ContentPaths { get; set; }
-}
