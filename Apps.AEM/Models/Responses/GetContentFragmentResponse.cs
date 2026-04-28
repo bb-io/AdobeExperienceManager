@@ -34,8 +34,8 @@ public class GetContentFragmentResponse
     [Display("Fields")]
     public List<ContentFragmentFieldResponse> Fields { get; set; } = [];
 
-    [Display("Variation names")]
-    public List<string> VariationNames { get; set; } = [];
+    [Display("Variation titles")]
+    public List<string> VariationTitles { get; set; } = [];
 
     [Display("Tags")]
     public List<string> Tags { get; set; } = [];
