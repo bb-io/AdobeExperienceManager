@@ -265,7 +265,7 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
         throw new PluginMisconfigurationException($"Property '{input.PropertyName}' not found at {path}.");
     }
 
-    [Action("Get content array property", Description = "Get a multi-value property (like tags) as a list of strings.")]
+    [Action("Get content array property", Description = "Get a multi-value property from a site.")]
     public async Task<GetContentArrayPropertyResponse> GetContentArrayProperty(
     [ActionParameter] GetPropertyValueRequest input)
     {

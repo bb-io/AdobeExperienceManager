@@ -115,11 +115,15 @@ Navigate to your project's translation rules in the `/content` section, click "A
 - **Update asset tags**: Update the tags for a specific asset.
 - **Remove asset tags**: Remove specific tags from an asset.
 - **Change tags**: Add or remove tags from any content (pages, experience fragments, assets, etc).
+- **Get content text property**: Get a single string property value from a site page.
+- **Get content array property**: Get a multi-value property from a site.
 
 ## Events
 
 - **On content created or updated**: Polling event that periodically checks for new or updated content. If any content is found, the event is triggered.
 - **On tag added**: Periodically checks for new content with specified tags. If any content is found, the event is triggered.
+- **On tag added to content fragment**: A polling event that checks for watched tags newly added to content fragments under the specified DAM path.
+- **On property updated**: Triggered when a page under the root path has a specific property updated to match a provided value.
 
 > **Note on compatible content**: Blackbird supports all content types in the default page hierarchy: pages, content fragments, experience fragments, assets, etc. Support for ‘Guides’ and ‘DITA’ content is currently in beta.
 
