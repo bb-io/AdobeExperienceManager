@@ -80,8 +80,8 @@ public class ContentFragmentActions(InvocationContext invocationContext, IFileMa
                     Multiple = field["multiple"]?.Value<bool?>() ?? false
                 })
                 .ToList(),
-            VariationNames = fragment.Variations
-                .Select(variation => variation.Name)
+            VariationTitles = fragment.Variations
+                .Select(variation => variation.Title)
                 .Where(name => !string.IsNullOrWhiteSpace(name))
                 .ToList(),
             Tags = fragment.Tags
