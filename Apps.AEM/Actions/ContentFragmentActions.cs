@@ -52,6 +52,52 @@ public class ContentFragmentActions(InvocationContext invocationContext, IFileMa
         }));
     }
 
+    [Action("Get content fragment", Description = "Get a content fragment's metadata by DAM path.")]
+    public async Task<GetContentFragmentResponse> GetContentFragment([ActionParameter] ContentFragmentPathRequest input)
+    {
+        ValidateDamPath(input.ContentId);
+
+        var fragmentLookup = await FindFragmentByPathAsync(input.ContentId);
+        var fragment = await GetFragmentAsync(fragmentLookup.Id);
+
+        return new GetContentFragmentResponse
+        {
+            Id = fragment.Id,
+            Path = fragment.Path,
+            Title = fragment.Title,
+            Description = fragment.Description,
+            CreatedBy = fragment.Created?.By,
+            CreatedAt = fragment.Created?.At,
+            ModifiedBy = fragment.Modified?.By,
+            ModifiedAt = fragment.Modified?.At,
+            Status = fragment.Status,
+            Fields = fragment.Fields
+                .OfType<JObject>()
+                .Select(field => new ContentFragmentFieldResponse
+                {
+                    Type = field["type"]?.ToString() ?? string.Empty,
+                    Name = field["name"]?.ToString() ?? string.Empty,
+                    Multiple = field["multiple"]?.Value<bool?>() ?? false
+                })
+                .ToList(),
+            VariationNames = fragment.Variations
+                .Select(variation => variation.Name)
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .ToList(),
+            Tags = fragment.Tags
+                .Select(tag => tag switch
+                {
+                    JObject tagObject => tagObject["id"]?.ToString(),
+                    JValue tagValue => tagValue.ToString(),
+                    _ => null
+                })
+                .Where(tagId => !string.IsNullOrWhiteSpace(tagId))
+                .Select(tagId => tagId!)
+                .ToList(),
+            ModelPath = fragment.Model?.Path ?? string.Empty
+        };
+    }
+
     [Action("Download content fragment (experimental)", Description = "Download a content fragment's master fields as interoperable HTML.")]
     public async Task<DownloadContentFragmentResponse> DownloadContentFragments([ActionParameter] DownloadContentFragmentRequest input)
     {
