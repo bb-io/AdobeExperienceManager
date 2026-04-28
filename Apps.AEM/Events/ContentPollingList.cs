@@ -147,19 +147,19 @@ public class ContentPollingList(InvocationContext invocationContext) : Invocable
             ? ContentDamRoot
             : input.RootPath.Trim();
 
-        ValidateDamPath(rootPath);
+        if (string.IsNullOrWhiteSpace(rootPath) || !rootPath.StartsWith(ContentDamRoot, StringComparison.OrdinalIgnoreCase))
+            throw new PluginMisconfigurationException("Content fragment path must start with /content/dam.");
 
-        var fragmentStates = await GetContentFragmentObservedStatesAsync(rootPath, watchedTags);
+        var statuses = input.Statuses ?? ContentFragmentStatuses.All;
+
+        var fragmentStates = await GetContentFragmentObservedStatesAsync(rootPath, watchedTags, statuses);
         var currentSnapshot = fragmentStates
             .SelectMany(state => state.Tags.Select(tag => BuildObservedFragmentTagKey(state.Path, tag)))
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         var response = new PollingEventResponse<ContentFragmentTagMemory, OnContentFragmentTagAddedResponse>
         {
-            Memory = new ContentFragmentTagMemory
-            {
-                ObservedFragmentTags = currentSnapshot
-            }
+            Memory = new ContentFragmentTagMemory { ObservedFragmentTags = currentSnapshot }
         };
 
         if (request.Memory == null)
@@ -170,7 +170,7 @@ public class ContentPollingList(InvocationContext invocationContext) : Invocable
         }
 
         var previousSnapshot = new HashSet<string>(
-            request.Memory.ObservedFragmentTags ?? (IEnumerable<string>)Array.Empty<string>(),
+            request.Memory.ObservedFragmentTags ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase),
             StringComparer.OrdinalIgnoreCase);
 
         var addedItems = fragmentStates
@@ -196,11 +196,26 @@ public class ContentPollingList(InvocationContext invocationContext) : Invocable
 
     private async Task<List<ObservedContentFragmentState>> GetContentFragmentObservedStatesAsync(
         string rootPath,
-        HashSet<string> watchedTags)
+        HashSet<string> watchedTags,
+        IEnumerable<string> statuses)
     {
+        var filter = new JObject
+        {
+            ["path"] = rootPath,
+            ["tags"] = new JArray(watchedTags)
+        };
+
+        if (statuses.Any() == true)
+            filter["status"] = new JArray(statuses);
+
+        var query = new JObject
+        {
+            ["filter"] = filter
+        };
+
         var searchRequest = new RestRequest($"{FragmentsEndpoint}/search")
             .AddQueryParameter("projection", "summary")
-            .AddQueryParameter("query", BuildContentFragmentTagSearchQuery(rootPath, watchedTags));
+            .AddQueryParameter("query", query.ToString(Formatting.None));
 
         var fragments = await Client.PaginateByCursor<ContentFragmentDto>(searchRequest);
         var fragmentStates = new List<ObservedContentFragmentState>();
@@ -228,26 +243,6 @@ public class ContentPollingList(InvocationContext invocationContext) : Invocable
         }
 
         return fragmentStates;
-    }
-
-    private static string BuildContentFragmentTagSearchQuery(string rootPath, IEnumerable<string> watchedTags)
-    {
-        var query = new JObject
-        {
-            ["filter"] = new JObject
-            {
-                ["path"] = rootPath,
-                ["tags"] = new JArray(watchedTags)
-            }
-        };
-
-        return query.ToString(Formatting.None);
-    }
-
-    private static void ValidateDamPath(string path)
-    {
-        if (string.IsNullOrWhiteSpace(path) || !path.StartsWith(ContentDamRoot, StringComparison.OrdinalIgnoreCase))
-            throw new PluginMisconfigurationException("Content fragment path must start with /content/dam.");
     }
 
     private static string BuildObservedFragmentTagKey(string contentId, string tagId)
