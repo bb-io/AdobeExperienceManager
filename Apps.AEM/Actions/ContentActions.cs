@@ -241,6 +241,96 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
         };
     }
 
+    [Action("Get content text property", Description = "Get a single string property value from a site page.")]
+    public async Task<GetContentTextPropertyResponse> GetContentTextProperty(
+     [ActionParameter] GetPropertyValueRequest input)
+    {
+        var path = BuildJcrContentPath(input.ContentId);
+        var request = new RestRequest($"{path}.json", Method.Get);
+        var response = await Client.ExecuteWithErrorHandling(request);
+
+        using var jsonDocument = System.Text.Json.JsonDocument.Parse(response.Content);
+
+        if (jsonDocument.RootElement.TryGetProperty(input.PropertyName, out var propertyValue))
+        {
+            if (propertyValue.ValueKind == System.Text.Json.JsonValueKind.Array)
+                throw new PluginApplicationException($"Property '{input.PropertyName}' is an array, not a single text value. Please use 'Get content array property' instead.");
+
+            return new GetContentTextPropertyResponse
+            {
+                Value = propertyValue.ToString()
+            };
+        }
+
+        throw new PluginMisconfigurationException($"Property '{input.PropertyName}' not found at {path}.");
+    }
+
+    [Action("Get content array property", Description = "Get a multi-value property from a site.")]
+    public async Task<GetContentArrayPropertyResponse> GetContentArrayProperty(
+    [ActionParameter] GetPropertyValueRequest input)
+    {
+        var path = BuildJcrContentPath(input.ContentId);
+        var request = new RestRequest($"{path}.json", Method.Get);
+        var response = await Client.ExecuteWithErrorHandling(request);
+
+        using var jsonDocument = System.Text.Json.JsonDocument.Parse(response.Content);
+
+        if (jsonDocument.RootElement.TryGetProperty(input.PropertyName, out var propertyValue))
+        {
+            var list = new List<string>();
+
+            if (propertyValue.ValueKind == System.Text.Json.JsonValueKind.Array)
+            {
+                list = propertyValue.EnumerateArray().Select(x => x.ToString()).ToList();
+            }
+            else
+            {
+                list.Add(propertyValue.ToString());
+            }
+
+            return new GetContentArrayPropertyResponse
+            {
+                Values = list
+            };
+        }
+
+        throw new PluginMisconfigurationException($"Property '{input.PropertyName}' not found at {path}.");
+    }
+
+    //[Action("Update content property", Description = "Updates or creates a property on a site page.")]
+    //public async Task UpdateContentProperty(
+    //    [ActionParameter] UpdateContentPropertyRequest input)
+    //{
+    //    var path = BuildJcrContentPath(input.ContentId);
+
+    //    var tokenRequest = new RestRequest("/libs/granite/csrf/token.json", Method.Get);
+    //    var tokenResponse = await Client.ExecuteWithErrorHandling(tokenRequest);
+
+    //    using var json = System.Text.Json.JsonDocument.Parse(tokenResponse.Content);
+    //    var csrfToken = json.RootElement.GetProperty("token").GetString();
+
+    //    var updateRequest = new RestRequest(path, Method.Post);
+
+    //    updateRequest.AddHeader("CSRF-Token", csrfToken);
+    //    updateRequest.AddHeader("X-Requested-With", "XMLHttpRequest");
+
+    //    updateRequest.AddParameter("_charset_", "utf-8");
+    //    updateRequest.AddParameter(input.PropertyName, input.PropertyValue);
+    //    updateRequest.AddParameter($"{input.PropertyName}@TypeHint", "String");
+
+    //    await Client.ExecuteWithErrorHandling(updateRequest);
+    //}
+
+    private string BuildJcrContentPath(string path)
+    {
+        if (!path.StartsWith("/content/") || path.StartsWith("/content/dam/"))
+            throw new PluginMisconfigurationException("Path must start with /content/ and not be an asset path.");
+
+        return path.EndsWith("/jcr:content")
+    ? path
+    : $"{path.TrimEnd('/')}/jcr:content";
+    }
+
     private static string ModifyPath(string path, string sourceLanguage, string targetLanguage)
     {
         if (string.IsNullOrWhiteSpace(path) || string.IsNullOrEmpty(sourceLanguage) || string.IsNullOrEmpty(targetLanguage))

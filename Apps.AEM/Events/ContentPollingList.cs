@@ -194,6 +194,57 @@ public class ContentPollingList(InvocationContext invocationContext) : Invocable
         return response;
     }
 
+    [PollingEvent("On property updated", Description = "Triggered when a page under the root path has a specific property updated to match a provided value.")]
+    public async Task<PollingEventResponse<PropertyUpdateMemory, OnPropertyUpdatedResponse>> OnPropertyUpdatedAsync(
+    PollingEventRequest<PropertyUpdateMemory> request,
+    [PollingEventParameter] OnPropertyUpdatedRequest input)
+    {
+        var queryBuilderRequest = new RestRequest("/bin/querybuilder.json")
+            .AddQueryParameter("path", input.RootPath)
+            .AddQueryParameter("type", "cq:PageContent")
+            .AddQueryParameter("p.limit", "-1")
+            .AddQueryParameter("p.guessTotal", "true")
+            .AddQueryParameter("p.hits", "selective")
+            .AddQueryParameter("p.properties", "jcr:path")
+            .AddQueryParameter("1_property", input.PropertyName)
+            .AddQueryParameter("1_property.value", input.PropertyValue);
+
+        var queryBuilderResponse = await Client.ExecuteWithErrorHandling<QueryBuilderPathResponseDto>(queryBuilderRequest);
+
+        var contentFound = queryBuilderResponse.Hits
+            .Where(hit => !string.IsNullOrWhiteSpace(hit.Path))
+            .Select(hit => hit.Path.Replace("/jcr:content", ""))
+            .ToHashSet();
+
+        var previouslyObserved = request.Memory?.ObservedPaths ?? new HashSet<string>();
+
+        var newlyMatchedContent = contentFound.Except(previouslyObserved).ToList();
+
+        var response = new PollingEventResponse<PropertyUpdateMemory, OnPropertyUpdatedResponse>
+        {
+            Memory = new PropertyUpdateMemory
+            {
+                ObservedPaths = contentFound
+            }
+        };
+
+        if (request.Memory == null)
+        {
+            response.FlyBird = false;
+            response.Result = null;
+        }
+        else
+        {
+            response.FlyBird = newlyMatchedContent.Any();
+            response.Result = new OnPropertyUpdatedResponse
+            {
+                ContentPaths = newlyMatchedContent
+            };
+        }
+
+        return response;
+    }
+
     private async Task<List<ObservedContentFragmentState>> GetContentFragmentObservedStatesAsync(
         string rootPath,
         HashSet<string> watchedTags,
