@@ -36,27 +36,27 @@ public class PagePollingListTests : TestBase
         Assert.IsNotNull(response);
         Assert.IsNotNull(response.Memory);
         Assert.IsNull(response.Result);
-        
+
         // Log for debugging
         PrintResult(response);
-        
+
         Assert.IsFalse(response.FlyBird, "FlyBird should be false for first run with null memory");
-        
+
         // Now test with existing memory
         var memoryWithTime = new ContentMemory
         {
             LastTriggeredTime = DateTime.UtcNow.AddMinutes(-10)  // 10 minutes in the past
         };
-        
+
         var secondRequest = new PollingEventRequest<ContentMemory>
         {
             Memory = memoryWithTime,
             PollingTime = DateTime.UtcNow
         };
-        
+
         // Act again with memory
         var secondResponse = await pollingList.OnContentCreatedOrUpdated(secondRequest, optionalRequest);
-        
+
         // Log second response
         PrintResult(secondResponse);
     }
@@ -147,6 +147,40 @@ public class PagePollingListTests : TestBase
 
         // Act
         var response = await pollingList.OnTagAddedAsync(request, optionalRequest);
+
+        // Assert
+        PrintResult(response.Result);
+
+        Assert.IsTrue(response.FlyBird);
+        Assert.IsNotNull(response.Memory);
+        Assert.IsNotNull(response.Result);
+    }
+
+    [TestMethod]
+    [DynamicData(nameof(AllInvocationContexts), DynamicDataDisplayName = nameof(GetConnectionTypeName))]
+    public async Task OnContentFragmentTagAddedAsync_ShouldStartFlight(InvocationContext context)
+    {
+        var pollingList = new ContentPollingList(context);
+
+        // Arrange
+        var request = new PollingEventRequest<ContentFragmentTagMemory>
+        {
+            Memory = new()
+            {
+                ObservedFragmentTags = new HashSet<string>() // { "/content/test-site/en/Homepage" }
+            },
+            PollingTime = DateTime.UtcNow
+        };
+
+        var input = new OnContentFragmentTagAddedRequest()
+        {
+            Tags = ["raye:translations/ready-for-translation"],
+            FieldForTags = "tags",
+            RootPath = "/content/dam/raye/fragments/articles/library/",
+        };
+
+        // Act
+        var response = await pollingList.OnContentFragmentTagAddedAsync(request, input);
 
         // Assert
         PrintResult(response.Result);
