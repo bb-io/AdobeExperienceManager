@@ -151,8 +151,11 @@ public class ContentPollingList(InvocationContext invocationContext) : Invocable
             throw new PluginMisconfigurationException("Content fragment path must start with /content/dam.");
 
         var statuses = input.Statuses ?? ContentFragmentStatuses.All;
+        var fieldForTags = input.FieldForTags?.Trim();
 
-        var fragmentStates = await GetContentFragmentObservedStatesAsync(rootPath, watchedTags, statuses);
+        var fragmentStates = string.IsNullOrWhiteSpace(fieldForTags)
+            ? await GetContentFragmentObservedStatesAsync(rootPath, watchedTags, statuses)
+            : await GetContentFragmentObservedStatesFromFieldAsync(rootPath, watchedTags, statuses, fieldForTags);
         var currentSnapshot = fragmentStates
             .SelectMany(state => state.Tags.Select(tag => BuildObservedFragmentTagKey(state.Path, tag)))
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
@@ -294,6 +297,100 @@ public class ContentPollingList(InvocationContext invocationContext) : Invocable
         }
 
         return fragmentStates;
+    }
+
+    private async Task<List<ObservedContentFragmentState>> GetContentFragmentObservedStatesFromFieldAsync(
+        string rootPath,
+        HashSet<string> watchedTags,
+        IEnumerable<string> statuses,
+        string fieldForTags)
+    {
+        var fieldTagProperty = $"jcr:content/data/master/{fieldForTags}";
+        var selectedProperties = string.Join(" ", [
+            "jcr:path",
+            "jcr:uuid",
+            "jcr:content/jcr:title",
+            "jcr:content/metadata/dc:title",
+            fieldTagProperty
+        ]);
+        var queryBuilderRequest = new RestRequest("/bin/querybuilder.json")
+            .AddQueryParameter("path", rootPath)
+            .AddQueryParameter("type", "dam:Asset")
+            .AddQueryParameter("p.limit", -1)
+            .AddQueryParameter("p.guessTotal", "true")
+            .AddQueryParameter("p.hits", "selective")
+            .AddQueryParameter("p.properties", selectedProperties)
+            .AddQueryParameter("1_property", "jcr:content/contentFragment")
+            .AddQueryParameter("1_property.value", "true")
+            .AddQueryParameter("2_property", fieldTagProperty)
+            .AddQueryParameter("2_property.or", "true");
+
+        var index = 1;
+        foreach (var tag in watchedTags.OrderBy(tag => tag, StringComparer.OrdinalIgnoreCase))
+        {
+            queryBuilderRequest.AddQueryParameter($"2_property.{index}_value", tag);
+            index++;
+        }
+
+        var queryBuilderResponse = await Client.ExecuteWithErrorHandling<GetPathByTagQueryBuilderResponseDto>(queryBuilderRequest);
+        return queryBuilderResponse.Hits
+            .Where(hit => !string.IsNullOrWhiteSpace(hit.Path))
+            .Select(hit => new
+            {
+                Hit = hit,
+                Tags = GetMatchingQueryBuilderFieldTags(hit, fieldTagProperty, watchedTags)
+            })
+            .Where(item => item.Tags.Count > 0)
+            .GroupBy(item => item.Hit.Path, StringComparer.OrdinalIgnoreCase)
+            .Select(group => group.First())
+            .OrderBy(item => item.Hit.Path, StringComparer.OrdinalIgnoreCase)
+            .Select(item => new ObservedContentFragmentState(
+                GetQueryBuilderTitle(item.Hit),
+                item.Hit.Path,
+                item.Hit.Id,
+                item.Tags))
+            .ToList();
+    }
+
+    private static List<string> GetMatchingQueryBuilderFieldTags(
+        QueryBuilderPathHitResponseDto hit,
+        string fieldTagProperty,
+        HashSet<string> watchedTags)
+    {
+        if (!hit.AdditionalData.TryGetValue(fieldTagProperty, out var fieldValue))
+            return watchedTags.OrderBy(tag => tag, StringComparer.OrdinalIgnoreCase).ToList();
+
+        var matchingTags = GetQueryBuilderStringValues(fieldValue)
+            .Where(tagId => !string.IsNullOrWhiteSpace(tagId) && watchedTags.Contains(tagId))
+            .Select(tagId => tagId.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(tag => tag, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        return matchingTags.Count > 0
+            ? matchingTags
+            : watchedTags.OrderBy(tag => tag, StringComparer.OrdinalIgnoreCase).ToList();
+    }
+
+    private static IEnumerable<string> GetQueryBuilderStringValues(JToken token)
+    {
+        return token switch
+        {
+            JArray array => array.Values<string>().Where(value => !string.IsNullOrWhiteSpace(value)).Select(value => value!),
+            JValue value when value.Type == JTokenType.String && !string.IsNullOrWhiteSpace(value.ToString()) => [value.ToString()],
+            _ => []
+        };
+    }
+
+    private static string GetQueryBuilderTitle(QueryBuilderPathHitResponseDto hit)
+    {
+        if (!string.IsNullOrWhiteSpace(hit.Title))
+            return hit.Title;
+
+        if (!string.IsNullOrWhiteSpace(hit.MetadataTitle))
+            return hit.MetadataTitle;
+
+        return hit.Path.TrimEnd('/').Split('/').LastOrDefault() ?? string.Empty;
     }
 
     private static string BuildObservedFragmentTagKey(string contentId, string tagId)
