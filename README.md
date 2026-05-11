@@ -117,6 +117,7 @@ Navigate to your project's translation rules in the `/content` section, click "A
 - **Change tags**: Add or remove tags from any content (pages, experience fragments, assets, etc).
 - **Get content text property**: Get a single string property value from a site page.
 - **Get content array property**: Get a multi-value property from a site.
+- **Update content property**: Updates the value of a text property.
 
 ## Events
 

@@ -297,29 +297,29 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
         throw new PluginMisconfigurationException($"Property '{input.PropertyName}' not found at {path}.");
     }
 
-    //[Action("Update content property", Description = "Updates or creates a property on a site page.")]
-    //public async Task UpdateContentProperty(
-    //    [ActionParameter] UpdateContentPropertyRequest input)
-    //{
-    //    var path = BuildJcrContentPath(input.ContentId);
+    [Action("Update content property", Description = "Updates or creates a property on a site page.")]
+    public async Task UpdateContentProperty(
+        [ActionParameter] UpdateContentPropertyRequest input)
+    {
+        var path = BuildJcrContentPath(input.ContentId);
 
-    //    var tokenRequest = new RestRequest("/libs/granite/csrf/token.json", Method.Get);
-    //    var tokenResponse = await Client.ExecuteWithErrorHandling(tokenRequest);
+        var tokenRequest = new RestRequest("/libs/granite/csrf/token.json", Method.Get);
+        var tokenResponse = await Client.ExecuteWithErrorHandling(tokenRequest);
 
-    //    using var json = System.Text.Json.JsonDocument.Parse(tokenResponse.Content);
-    //    var csrfToken = json.RootElement.GetProperty("token").GetString();
+        using var json = System.Text.Json.JsonDocument.Parse(tokenResponse.Content);
+        var csrfToken = json.RootElement.GetProperty("token").GetString();
 
-    //    var updateRequest = new RestRequest(path, Method.Post);
+        var updateRequest = new RestRequest(path, Method.Post);
 
-    //    updateRequest.AddHeader("CSRF-Token", csrfToken);
-    //    updateRequest.AddHeader("X-Requested-With", "XMLHttpRequest");
+        updateRequest.AddHeader("CSRF-Token", csrfToken);
+        updateRequest.AddHeader("X-Requested-With", "XMLHttpRequest");
 
-    //    updateRequest.AddParameter("_charset_", "utf-8");
-    //    updateRequest.AddParameter(input.PropertyName, input.PropertyValue);
-    //    updateRequest.AddParameter($"{input.PropertyName}@TypeHint", "String");
+        updateRequest.AddParameter("_charset_", "utf-8");
+        updateRequest.AddParameter(input.PropertyName, input.PropertyValue);
+        updateRequest.AddParameter($"{input.PropertyName}@TypeHint", "String");
 
-    //    await Client.ExecuteWithErrorHandling(updateRequest);
-    //}
+        await Client.ExecuteWithErrorHandling(updateRequest);
+    }
 
     private string BuildJcrContentPath(string path)
     {
