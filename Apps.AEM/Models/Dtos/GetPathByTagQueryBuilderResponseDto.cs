@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Apps.AEM.Models.Dtos;
 
@@ -27,4 +28,16 @@ public class QueryBuilderPathHitResponseDto
 {
     [JsonProperty("jcr:path")]
     public string Path { get; set; } = string.Empty;
+
+    [JsonProperty("jcr:uuid")]
+    public string Id { get; set; } = string.Empty;
+
+    [JsonProperty("jcr:content/jcr:title")]
+    public string Title { get; set; } = string.Empty;
+
+    [JsonProperty("jcr:content/metadata/dc:title")]
+    public string MetadataTitle { get; set; } = string.Empty;
+
+    [JsonExtensionData]
+    public IDictionary<string, JToken> AdditionalData { get; set; } = new Dictionary<string, JToken>();
 }
