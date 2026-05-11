@@ -16,8 +16,6 @@ using Blackbird.Filters.Transformations;
 using Blackbird.Filters.Xliff.Xliff2;
 using Newtonsoft.Json;
 using RestSharp;
-using System.IO;
-using System.Text;
 
 namespace Apps.AEM.Actions;
 
