@@ -159,6 +159,45 @@ Unlike standard AEM connectors, Blackbird.io gives you full control over the pro
 
 [![Watch the video](https://img.youtube.com/vi/aOInlw5ADGo/0.jpg)](https://www.youtube.com/watch?v=aOInlw5ADGo)
 
+## Notes
+
+There are three primary integration patterns we typically support:
+
+**1. AEM Sites**
+
+- Supports custom components and structured content
+- Handles live copies / live pages correctly
+- Respects AEM’s built-in translation rules (including exclusion of technical fields from translation)
+- Works cleanly within AEM Cloud’s architecture
+
+**2. AEM Guides (DITA)**
+
+- Direct support for DITA books, maps, and topics
+- No need for manual assembly of translation projects
+- Custom elements and flexible filtering supported
+- Designed to handle structured documentation workflows at scale
+
+**3. AEM Assets (e.g., PDFs, eBooks, documents)**
+
+- Fully supported, but more dependent on the client’s AEM Cloud configuration
+- Requires proper enablement of the HTTP Assets API for file upload and processing
+- Setup considerations depend on how assets are stored and accessed
+
+### Common “Challenge” in Cloud Environments
+
+The primary consideration we see with AEM Cloud is not Blackbird connectivity instability, but proper scoping and workflow design. Specifically:
+
+- Determining which content paths (Sites vs Guides vs Assets) need to be automated
+- Defining tagging strategies to trigger translation workflows
+- Setting up filtering rules in Blackbird to ensure:
+  - Only relevant content is processed
+  - Technical/system fields are excluded
+  - Large-scale AEM repositories don’t create unnecessary processing load
+
+For larger AEM Cloud implementations, thoughtful configuration around paths, tags, and content filtering is key to ensuring optimal performance and clean automation flows.
+
+Once that foundation is in place, we’ve seen stable, predictable behavior in AEM Cloud environments.
+
 ## Feedback
 
 Would you like to use this app or have feedback on our implementation? Reach out to us using the [established channels](https://www.blackbird.io/) or create an issue.
