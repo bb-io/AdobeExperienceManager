@@ -118,6 +118,7 @@ Navigate to your project's translation rules in the `/content` section, click "A
 - **Get content text property**: Get a single string property value from a site page.
 - **Get content array property**: Get a multi-value property from a site.
 - **Update content property**: Updates the value of a text property.
+- **Get IDs from content**: Get the IDs of all sites, content fragments or experience fragments from a Blackbird-generated file.
 
 ## Events
 
