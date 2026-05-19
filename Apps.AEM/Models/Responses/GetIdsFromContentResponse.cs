@@ -4,9 +4,9 @@ namespace Apps.AEM.Models.Responses;
 
 public class GetIdsFromContentResponse
 {
-    [Display("Root content")]
+    [Display("Root content ID")]
     public string RootContentId { get; set; } = string.Empty;
 
-    [Display("Referenced content")]
+    [Display("Referenced content ID")]
     public List<string> ReferencedContentIds { get; set; } = [];
 }
