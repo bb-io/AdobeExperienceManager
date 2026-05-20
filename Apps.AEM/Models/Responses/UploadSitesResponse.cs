@@ -5,7 +5,7 @@ namespace Apps.AEM.Models.Responses;
 public class UploadSitesResponse
 {
     [Display("Reference content")]
-    public IEnumerable<UploadContentResponse> ReferenceContent { get; set; }
+    public IEnumerable<UploadReferenceContentResponse> ReferenceContent { get; set; }
     
     [Display("Root content")]
     public UploadContentResponse RootContent { get; set; }
