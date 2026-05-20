@@ -117,7 +117,7 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
 
     [Action("Upload sites content", Description = "Update content at the specified path, or create it if it does not exist. Accepts a translated file (interoperable HTML or XLIFF) and the original JSON file as input.")]
     [BlueprintActionDefinition(BlueprintAction.UploadContent)]
-    public async Task<IEnumerable<UploadContentResponse>> UploadContent([ActionParameter] UploadContentRequest input)
+    public async Task<UploadContentResponse> UploadContent([ActionParameter] UploadContentRequest input)
     {
         if (!string.IsNullOrWhiteSpace(input.ContentId) && input.SkipUpdatingReferences != true)
             throw new PluginMisconfigurationException("'ContentId' can only be set with 'SkipUpdatingReferences' being set to true, as path overwrite only impacts a main (root) content.");
@@ -141,19 +141,17 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
             ? JsonToOriginalConverter.ConvertToEntities(inputString)
             : HtmlToJsonConverter.ConvertToJson(inputString);
 
-        var uploadResults = new List<UploadContentResponse>();
+        UploadContentResponse? rootResult = null;
 
         foreach (var entity in entities)
         {
             if (entity.ReferenceContent && input.SkipUpdatingReferences == true)
-            {
                 continue;
-            }
 
             try
             {
                 // allow overwriting source path from the action input
-                // so that target con can be uploaded to a very different path from source
+                // so that target content can be uploaded to a very different path from source
                 var sourcePath = !string.IsNullOrWhiteSpace(input.ContentId) && !entity.ReferenceContent
                     ? input.ContentId
                     : entity.SourcePath;
@@ -180,40 +178,30 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
 
                 var uploadResult = await Client.ExecuteWithErrorHandling<UploadContentResponse>(uploadRequest);
                 if (string.IsNullOrEmpty(uploadResult.Message))
+                    throw new PluginApplicationException("Failed to upload content. No message returned from server.");
+
+                if (!entity.ReferenceContent)
                 {
-                    throw new PluginApplicationException($"Failed to upload content. No message returned from server.");
+                    rootResult = new UploadContentResponse
+                    {
+                        ContentId = targetPath,
+                        Message = uploadResult.Message.Replace("Content imported successfully", "Content uploaded successfully"),
+                    };
+
+                    if (!isJsonInput)
+                        rootResult.TargetFile = await TryDownloadTargetForBlacklakeAsync(entity.SourcePath, targetPath, input.GetCleanTargetLanguage());
                 }
-
-                var response = new UploadContentResponse
-                {
-                    ContentId = targetPath,
-                    Message = uploadResult.Message.Replace(
-                        "Content imported successfully",
-                        "Content uploaded successfully"),
-                };
-
-                if (!entity.ReferenceContent && !isJsonInput)
-                    response.TargetFile = await TryDownloadTargetForBlacklakeAsync(entity.SourcePath, targetPath, input.GetCleanTargetLanguage());
-
-                uploadResults.Add(response);
             }
             catch (Exception ex)
             {
                 if (entity.ReferenceContent && input.IgnoreReferenceContentErrors == true)
-                {
-                    uploadResults.Add(new()
-                    {
-                        ContentId = entity.SourcePath,
-                        Message = $"Ignored error during reference content upload: {ex.Message}",
-                    });
                     continue;
-                }
 
                 throw;
             }
         }
 
-        return uploadResults;
+        return rootResult ?? throw new PluginApplicationException("The uploaded file did not contain root content.");
     }
 
     [Action("Change tags", Description = "Add or remove tags from content (pages, assets, etc.).")]
