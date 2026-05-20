@@ -117,7 +117,7 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
 
     [Action("Upload sites content", Description = "Update content at the specified path, or create it if it does not exist. Accepts a translated file (interoperable HTML or XLIFF) and the original JSON file as input.")]
     [BlueprintActionDefinition(BlueprintAction.UploadContent)]
-    public async Task<UploadContentResponse> UploadContent([ActionParameter] UploadContentRequest input)
+    public async Task<UploadSitesResponse> UploadContent([ActionParameter] UploadContentRequest input)
     {
         if (!string.IsNullOrWhiteSpace(input.ContentId) && input.SkipUpdatingReferences != true)
             throw new PluginMisconfigurationException("'ContentId' can only be set with 'SkipUpdatingReferences' being set to true, as path overwrite only impacts a main (root) content.");
@@ -142,7 +142,7 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
             : HtmlToJsonConverter.ConvertToJson(inputString);
 
         UploadContentResponse? rootResult = null;
-
+        var referenceContentUploadResults = new List<UploadContentResponse>();
         foreach (var entity in entities)
         {
             if (entity.ReferenceContent && input.SkipUpdatingReferences == true)
@@ -179,7 +179,7 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
                 var uploadResult = await Client.ExecuteWithErrorHandling<UploadContentResponse>(uploadRequest);
                 if (string.IsNullOrEmpty(uploadResult.Message))
                     throw new PluginApplicationException("Failed to upload content. No message returned from server.");
-
+                
                 if (!entity.ReferenceContent)
                 {
                     rootResult = new UploadContentResponse
@@ -189,19 +189,40 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
                     };
 
                     if (!isJsonInput)
-                        rootResult.TargetFile = await TryDownloadTargetForBlacklakeAsync(entity.SourcePath, targetPath, input.GetCleanTargetLanguage());
+                    {
+                        rootResult.TargetFile = await TryDownloadTargetForBlacklakeAsync(entity.SourcePath, targetPath,
+                            input.GetCleanTargetLanguage());
+                    }
+                }
+                else
+                {
+                    referenceContentUploadResults.Add(new()
+                    {
+                        ContentId = targetPath,
+                        Message = uploadResult.Message.Replace(
+                            "Content imported successfully",
+                            "Content uploaded successfully"),
+                    });
                 }
             }
             catch (Exception ex)
             {
                 if (entity.ReferenceContent && input.IgnoreReferenceContentErrors == true)
+                {
+                    referenceContentUploadResults.Add(new()
+                    {
+                        ContentId = entity.SourcePath,
+                        Message = $"Ignored error during reference content upload: {ex.Message}",
+                    });
+                    
                     continue;
+                }
 
                 throw;
             }
         }
-
-        return rootResult ?? throw new PluginApplicationException("The uploaded file did not contain root content.");
+        
+        return new(rootResult!, referenceContentUploadResults);
     }
 
     [Action("Change tags", Description = "Add or remove tags from content (pages, assets, etc.).")]
