@@ -25,4 +25,6 @@ public class UploadContentRequest : IUploadContentInput
 
     [Display("Ignore reference content errors", Description = "When set to true, errors updating reference content will be ignored.")]
     public bool? IgnoreReferenceContentErrors { get; set; }
+    
+    public string GetCleanTargetLanguage() => Locale.Replace("/", string.Empty);
 }

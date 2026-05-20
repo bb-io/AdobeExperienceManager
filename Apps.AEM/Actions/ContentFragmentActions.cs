@@ -2,11 +2,13 @@ using Apps.AEM.Models.Dtos;
 using Apps.AEM.Models.Entities;
 using Apps.AEM.Models.Requests;
 using Apps.AEM.Models.Responses;
+using Apps.AEM.Utils;
 using Apps.AEM.Utils.Converters;
 using Apps.AEM.Utils.Converters.InteroperableContent;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Exceptions;
+using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using Blackbird.Filters.Extensions;
@@ -111,7 +113,8 @@ public class ContentFragmentActions(InvocationContext invocationContext, IFileMa
         var fragment = await GetFragmentAsync(fragmentLookup.Id);
         var exportEntities = await BuildDownloadEntitiesAsync(fragment, input);
 
-        var html = ContentFragmentHtmlConverter.ConvertToHtml(exportEntities, input.ExcludedFields);
+        var metadata = BlackbirdMetadataFactory.Create(Credentials, fragment.Path, contentNameOverride: fragment.Title);
+        var html = ContentFragmentHtmlConverter.ConvertToHtml(exportEntities, input.ExcludedFields, metadata);
         var fileName = ContentPathToFilenameConverter.PathToFilename(fragment.Path);
 
         var fileReference = await fileManagementClient.UploadAsync(
@@ -189,6 +192,8 @@ public class ContentFragmentActions(InvocationContext invocationContext, IFileMa
 
         string? rootVariationName = null;
         string? rootContentId = null;
+        string? rootFragmentId = null;
+        string? rootFragmentTitle = null;
         var rootVariationCreated = false;
         var updatedReferenceCount = 0;
         var checkedOutFragments = new List<(string id, string path)>();
@@ -239,12 +244,16 @@ public class ContentFragmentActions(InvocationContext invocationContext, IFileMa
                 }
 
                 rootContentId = fragmentLookup.Path;
+                rootFragmentId = fragmentLookup.Id;
+                rootFragmentTitle = fragmentLookup.Title;
                 rootVariationName = variation.Name;
                 rootVariationCreated = isCreated;
             }
 
-            if (string.IsNullOrWhiteSpace(rootContentId) || string.IsNullOrWhiteSpace(rootVariationName))
+            if (string.IsNullOrWhiteSpace(rootContentId) || string.IsNullOrWhiteSpace(rootVariationName) || string.IsNullOrWhiteSpace(rootFragmentId))
                 throw new PluginMisconfigurationException("The uploaded file did not contain a root content fragment payload.");
+
+            var targetFile = await TryDownloadVariationForBlacklakeAsync(rootContentId, rootFragmentTitle, rootFragmentId, rootVariationName);
 
             return new UploadContentFragmentResponse
             {
@@ -252,7 +261,8 @@ public class ContentFragmentActions(InvocationContext invocationContext, IFileMa
                 VariationName = rootVariationName,
                 Message = rootVariationCreated
                     ? $"Content fragment variation created and uploaded successfully. Updated {updatedReferenceCount} referenced fragments."
-                    : $"Content fragment variation uploaded successfully. Updated {updatedReferenceCount} referenced fragments."
+                    : $"Content fragment variation uploaded successfully. Updated {updatedReferenceCount} referenced fragments.",
+                TargetFile = targetFile
             };
         }
         finally
@@ -264,6 +274,34 @@ public class ContentFragmentActions(InvocationContext invocationContext, IFileMa
                     await UpdateFragmentCheckoutStateAsync(fragmentId, false);
                 }
             }
+        }
+    }
+
+    private async Task<FileReference?> TryDownloadVariationForBlacklakeAsync(
+        string fragmentPath,
+        string? fragmentTitle,
+        string fragmentId,
+        string variationName)
+    {
+        try
+        {
+            var (variation, _) = await GetVariationAsync(fragmentId, variationName);
+
+            var metadata = BlackbirdMetadataFactory.Create(
+                Credentials,
+                fragmentPath,
+                contentNameOverride: string.IsNullOrWhiteSpace(fragmentTitle) ? null : fragmentTitle);
+
+            var entities = new List<ContentFragmentHtmlEntity> { new(fragmentPath, variation.Fields, false) };
+            var html = ContentFragmentHtmlConverter.ConvertToHtml(entities, metadata: metadata);
+
+            var fileName = ContentPathToFilenameConverter.PathToFilename(fragmentPath);
+            var stream = new MemoryStream(Encoding.UTF8.GetBytes(html)) { Position = 0 };
+            return await fileManagementClient.UploadAsync(stream, "text/html", $"{fileName}.html");
+        }
+        catch
+        {
+            return null;
         }
     }
 

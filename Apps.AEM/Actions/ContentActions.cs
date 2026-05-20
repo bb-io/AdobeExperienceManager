@@ -12,9 +12,11 @@ using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.SDK.Blueprints;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
+using Blackbird.Applications.Sdk.Utils.Extensions.Files;
 using Blackbird.Filters.Transformations;
 using Blackbird.Filters.Xliff.Xliff2;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using RestSharp;
 
 namespace Apps.AEM.Actions;
@@ -91,10 +93,13 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
                 break;
 
             case "text/html":
+                var jsonObj = JsonConvert.DeserializeObject<JObject>(response.Content);
+                var metadata = BlackbirdMetadataFactory.Create(Credentials, input.ContentId, jsonObj);
                 var htmlString = JsonToHtmlConverter.ConvertToHtml(
                     response.Content,
                     input.ContentId,
-                    referenceEntities);
+                    referenceEntities,
+                    metadata);
 
                 var memoryStream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(htmlString)) { Position = 0 };
 
@@ -116,11 +121,9 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
             throw new PluginMisconfigurationException("'ContentId' can only be set with 'SkipUpdatingReferences' being set to true, as path overwrite only impacts a main (root) content.");
 
         var fileStream = await fileManagementClient.DownloadAsync(input.Content);
-        var memoryStream = new MemoryStream();
-        await fileStream.CopyToAsync(memoryStream);
-        memoryStream.Position = 0;
+        var bytes = await fileStream.GetByteData();
 
-        var inputString = System.Text.Encoding.UTF8.GetString(memoryStream.ToArray());
+        var inputString = System.Text.Encoding.UTF8.GetString(bytes);
 
         if (Xliff2Serializer.IsXliff2(inputString))
         {
@@ -131,7 +134,8 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
         if (GuidesActions.IsDita(inputString))
             throw new PluginMisconfigurationException("Use 'Upload guides content' action to upload dita maps and topics.");
 
-        var entities = OriginalJsonValidator.IsJson(inputString)
+        var isJsonInput = OriginalJsonValidator.IsJson(inputString);
+        var entities = isJsonInput
             ? JsonToOriginalConverter.ConvertToEntities(inputString)
             : HtmlToJsonConverter.ConvertToJson(inputString);
 
@@ -167,24 +171,29 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
                     references = entity.References,
                 });
 
-                var request = new RestRequest("/content/services/bb-aem-connector/content-importer", Method.Post)
+                var uploadRequest = new RestRequest("/content/services/bb-aem-connector/content-importer", Method.Post)
                     .AddHeader("Content-Type", "application/json")
                     .AddHeader("Accept", "application/json")
                     .AddStringBody(jsonString, DataFormat.Json);
 
-                var uploadResult = await Client.ExecuteWithErrorHandling<UploadContentResponse>(request);
+                var uploadResult = await Client.ExecuteWithErrorHandling<UploadContentResponse>(uploadRequest);
                 if (string.IsNullOrEmpty(uploadResult.Message))
                 {
                     throw new PluginApplicationException($"Failed to upload content. No message returned from server.");
                 }
 
-                uploadResults.Add(new()
+                var response = new UploadContentResponse
                 {
                     ContentId = targetPath,
                     Message = uploadResult.Message.Replace(
                         "Content imported successfully",
                         "Content uploaded successfully"),
-                });
+                };
+
+                if (!entity.ReferenceContent && !isJsonInput)
+                    response.TargetFile = await TryDownloadTargetForBlacklakeAsync(entity.SourcePath, targetPath, input.GetCleanTargetLanguage());
+
+                uploadResults.Add(response);
             }
             catch (Exception ex)
             {
@@ -335,8 +344,33 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
         {
             throw new PluginApplicationException("Main (root) rath, source language, and target language must be provided.");
         }
-        
+
         return path.Replace(sourceLanguage, targetLanguage);
+    }
+
+    private async Task<FileReference?> TryDownloadTargetForBlacklakeAsync(string originalSourcePath, string targetPath, string targetLanguage)
+    {
+        try
+        {
+            var request = new RestRequest("/content/services/bb-aem-connector/content-exporter.json")
+                .AddQueryParameter("contentPath", targetPath);
+
+            var response = await Client.ExecuteWithErrorHandling(request);
+            if (string.IsNullOrEmpty(response.Content))
+                return null;
+
+            var jsonObj = JsonConvert.DeserializeObject<JObject>(response.Content);
+            var metadata = BlackbirdMetadataFactory.Create(Credentials, targetPath, jsonObj, ucidOverride: originalSourcePath, languageOverride: targetLanguage);
+            var htmlString = JsonToHtmlConverter.ConvertToHtml(response.Content, targetPath, [], metadata);
+
+            var filename = ContentPathToFilenameConverter.PathToFilename(targetPath);
+            var memoryStream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(htmlString)) { Position = 0 };
+            return await fileManagementClient.UploadAsync(memoryStream, "text/html", $"{filename}.html");
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     private async Task<(IEnumerable<ReferenceEntity> entities, IEnumerable<string> errors)> GetReferenceEntitiesAsync(

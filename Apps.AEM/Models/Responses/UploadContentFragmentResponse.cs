@@ -1,4 +1,5 @@
 using Blackbird.Applications.Sdk.Common;
+using Blackbird.Applications.Sdk.Common.Files;
 
 namespace Apps.AEM.Models.Responses;
 
@@ -11,4 +12,7 @@ public class UploadContentFragmentResponse
     public string VariationName { get; set; } = string.Empty;
 
     public string Message { get; set; } = string.Empty;
+
+    [Display("Target file", Description = "HTML of the uploaded variation for Blacklake integration.")]
+    public FileReference? TargetFile { get; set; }
 }

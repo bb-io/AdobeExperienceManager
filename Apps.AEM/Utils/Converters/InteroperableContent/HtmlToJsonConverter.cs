@@ -101,6 +101,7 @@ public static class HtmlToJsonConverter
                     {
                         var cleanElement = element.CloneNode(true);
                         cleanElement.Attributes.Remove("data-json-path");
+                        cleanElement.Attributes.Remove("data-blackbird-key");
                         UpdateJsonValue(jsonObj, jsonPath, cleanElement.OuterHtml);
                     }
                     else

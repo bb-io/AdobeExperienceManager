@@ -5,6 +5,7 @@ using HtmlAgilityPack;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Web;
+using Apps.AEM.Models;
 
 namespace Apps.AEM.Utils.Converters.InteroperableContent;
 
@@ -43,13 +44,21 @@ public static class JsonToHtmlConverter
         return references;
     }
 
-    public static string ConvertToHtml(string json, string sourcePath, IEnumerable<ReferenceEntity> referenceEntities)
+    public static string ConvertToHtml(
+        string json,
+        string sourcePath,
+        IEnumerable<ReferenceEntity> referenceEntities,
+        BlackbirdMetadata? metadata = null)
     {
         var jsonObj = JsonConvert.DeserializeObject<JObject>(json)
             ?? throw new PluginApplicationException("Received an empty intut for HTML conversion");
 
         var doc = new HtmlDocument();
         var htmlNode = doc.CreateElement("html");
+
+        if (!string.IsNullOrWhiteSpace(metadata?.HtmlLanguage))
+            htmlNode.SetAttributeValue("lang", metadata.HtmlLanguage);
+
         doc.DocumentNode.AppendChild(htmlNode);
 
         var headNode = doc.CreateElement("head");
@@ -64,43 +73,73 @@ public static class JsonToHtmlConverter
         metaSourcePath.SetAttributeValue("content", sourcePath);
         headNode.AppendChild(metaSourcePath);
 
+        AddBlackbirdInteroperabilityMetadata(doc, headNode, metadata);
+
         var bodyNode = doc.CreateElement("body");
         htmlNode.AppendChild(bodyNode);
 
+        var keyPrefix = metadata?.Ucid;
         var rootDivNode = doc.CreateElement("div");
         rootDivNode.SetAttributeValue("data-root", "true");
         rootDivNode.SetAttributeValue("data-source-path", sourcePath);
         rootDivNode.SetAttributeValue("data-original-json", HttpUtility.HtmlEncode(jsonObj.ToString(Formatting.None)));
 
-        ProcessJsonContent(jsonObj, rootDivNode, doc, "");
+        ProcessJsonContent(jsonObj, rootDivNode, doc, "", keyPrefix);
         bodyNode.AppendChild(rootDivNode);
 
         foreach (var referenceEntity in referenceEntities)
         {
-            AppendReferenceContent(bodyNode, doc, referenceEntity);
+            AppendReferenceContent(bodyNode, doc, referenceEntity, keyPrefix);
         }
 
         return "<!DOCTYPE html>\n" + doc.DocumentNode.OuterHtml;
     }
 
-    private static void AppendReferenceContent(HtmlNode parentNode, HtmlDocument doc, ReferenceEntity referenceEntity)
+    private static void AddBlackbirdInteroperabilityMetadata(HtmlDocument doc, HtmlNode headNode,
+        BlackbirdMetadata? metadata)
+    {
+        if (metadata == null)
+        {
+            return;
+        }
+
+        AddMetaTag(doc, headNode, "blackbird-ucid", metadata.Ucid);
+        AddMetaTag(doc, headNode, "blackbird-content-name", metadata.ContentName);
+        AddMetaTag(doc, headNode, "blackbird-system-name", metadata.SystemName);
+        AddMetaTag(doc, headNode, "blackbird-system-ref", metadata.SystemRef);
+    }
+
+    private static void AddMetaTag(HtmlDocument doc, HtmlNode headNode, string name, string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return;
+        }
+
+        var metaNode = doc.CreateElement("meta");
+        metaNode.SetAttributeValue("name", name);
+        metaNode.SetAttributeValue("content", System.Net.WebUtility.HtmlEncode(value));
+        headNode.AppendChild(metaNode);
+    }
+
+    private static void AppendReferenceContent(HtmlNode parentNode, HtmlDocument doc, ReferenceEntity referenceEntity, string? keyPrefix)
     {
         var referenceDiv = doc.CreateElement("div");
         referenceDiv.SetAttributeValue("data-reference-path", referenceEntity.ReferencePath);
         referenceDiv.SetAttributeValue("data-original-json", HttpUtility.HtmlEncode(referenceEntity.Content));
         var jObject = JsonConvert.DeserializeObject<JObject>(referenceEntity.Content)!;
-        ProcessJsonContent(jObject, referenceDiv, doc, "references");
+        ProcessJsonContent(jObject, referenceDiv, doc, "references", keyPrefix);
         parentNode.AppendChild(referenceDiv);
     }
 
-    private static void ProcessJsonContent(JObject jsonObj, HtmlNode parentNode, HtmlDocument doc, string jsonPath)
+    private static void ProcessJsonContent(JObject jsonObj, HtmlNode parentNode, HtmlDocument doc, string jsonPath, string? keyPrefix = null)
     {
         foreach (var property in jsonObj)
         {
             // Skip the references array to prevent adding reference metadata to the visible content
             if (property.Key == "references")
                 continue;
-                
+
             string currentPath = AppendJsonPath(jsonPath, property.Key);
             if (property.Value?.Type == JTokenType.Object)
             {
@@ -108,16 +147,16 @@ public static class JsonToHtmlConverter
                 if (jObj["text"] != null && jObj["textIsRich"] != null &&
                     string.Equals(jObj["textIsRich"]?.ToString(), "true", StringComparison.OrdinalIgnoreCase))
                 {
-                    ProcessRichText(jObj["text"]!.ToString(), parentNode, doc, currentPath + ".text");
+                    ProcessRichText(jObj["text"]!.ToString(), parentNode, doc, currentPath + ".text", keyPrefix);
                 }
                 else
                 {
-                    ProcessJsonContent(jObj, parentNode, doc, currentPath);
+                    ProcessJsonContent(jObj, parentNode, doc, currentPath, keyPrefix);
                 }
             }
             else if (property.Value?.Type == JTokenType.Array)
             {
-                ProcessJsonArray((JArray)property.Value, parentNode, doc, currentPath);
+                ProcessJsonArray((JArray)property.Value, parentNode, doc, currentPath, keyPrefix);
             }
             else if (property.Value?.Type != JTokenType.Null)
             {
@@ -125,6 +164,8 @@ public static class JsonToHtmlConverter
                 {
                     var textNode = doc.CreateElement("div");
                     textNode.SetAttributeValue("data-json-path", currentPath);
+                    if (keyPrefix != null)
+                        textNode.SetAttributeValue("data-blackbird-key", $"{keyPrefix}#{currentPath}");
                     textNode.InnerHtml = property.Value?.ToString() ?? string.Empty;
                     parentNode.AppendChild(textNode);
                 }
@@ -132,12 +173,12 @@ public static class JsonToHtmlConverter
         }
     }
 
-    private static void ProcessJsonArray(JArray array, HtmlNode parentNode, HtmlDocument doc, string jsonPath)
+    private static void ProcessJsonArray(JArray array, HtmlNode parentNode, HtmlDocument doc, string jsonPath, string? keyPrefix = null)
     {
         // Skip processing if this is the references array
         if (jsonPath.Equals("references"))
             return;
-            
+
         for (int i = 0; i < array.Count; i++)
         {
             var item = array[i];
@@ -147,25 +188,29 @@ public static class JsonToHtmlConverter
             {
                 var container = doc.CreateElement("div");
                 container.SetAttributeValue("data-json-path", itemPath);
+                if (keyPrefix != null)
+                    container.SetAttributeValue("data-blackbird-key", $"{keyPrefix}#{itemPath}");
                 parentNode.AppendChild(container);
 
-                ProcessJsonContent((JObject)item, container, doc, itemPath);
+                ProcessJsonContent((JObject)item, container, doc, itemPath, keyPrefix);
             }
             else if (item.Type == JTokenType.Array)
             {
-                ProcessJsonArray((JArray)item, parentNode, doc, itemPath);
+                ProcessJsonArray((JArray)item, parentNode, doc, itemPath, keyPrefix);
             }
             else if (item.Type != JTokenType.Null)
             {
                 var textNode = doc.CreateElement("div");
                 textNode.SetAttributeValue("data-json-path", itemPath);
+                if (keyPrefix != null)
+                    textNode.SetAttributeValue("data-blackbird-key", $"{keyPrefix}#{itemPath}");
                 textNode.InnerHtml = item.ToString();
                 parentNode.AppendChild(textNode);
             }
         }
     }
 
-    private static void ProcessRichText(string htmlContent, HtmlNode parentNode, HtmlDocument doc, string jsonPath)
+    private static void ProcessRichText(string htmlContent, HtmlNode parentNode, HtmlDocument doc, string jsonPath, string? keyPrefix = null)
     {
         var tempDoc = new HtmlDocument();
         tempDoc.LoadHtml(htmlContent);
@@ -182,6 +227,8 @@ public static class JsonToHtmlConverter
                 }
 
                 newNode.SetAttributeValue("data-json-path", jsonPath);
+                if (keyPrefix != null)
+                    newNode.SetAttributeValue("data-blackbird-key", $"{keyPrefix}#{jsonPath}");
 
                 newNode.InnerHtml = node.InnerHtml;
                 parentNode.AppendChild(newNode);

@@ -1,3 +1,4 @@
+using Apps.AEM.Models;
 using Apps.AEM.Models.Entities;
 using HtmlAgilityPack;
 using Newtonsoft.Json;
@@ -10,14 +11,15 @@ public static class ContentFragmentHtmlConverter
 {
     private static readonly string[] DefaultExcludedFieldNames = ["history", "previewUrl"];
 
-    public static string ConvertToHtml(JArray fields, string sourcePath, IEnumerable<string>? excludedFields = null)
+    public static string ConvertToHtml(JArray fields, string sourcePath, IEnumerable<string>? excludedFields = null, BlackbirdMetadata? metadata = null)
     {
         return ConvertToHtml(
             [new ContentFragmentHtmlEntity(sourcePath, fields, false)],
-            excludedFields);
+            excludedFields,
+            metadata);
     }
 
-    public static string ConvertToHtml(IEnumerable<ContentFragmentHtmlEntity> entities, IEnumerable<string>? excludedFields = null)
+    public static string ConvertToHtml(IEnumerable<ContentFragmentHtmlEntity> entities, IEnumerable<string>? excludedFields = null, BlackbirdMetadata? metadata = null)
     {
         var excludedFieldNames = new HashSet<string>(DefaultExcludedFieldNames, StringComparer.OrdinalIgnoreCase);
 
@@ -35,6 +37,10 @@ public static class ContentFragmentHtmlConverter
 
         var doc = new HtmlDocument();
         var htmlNode = doc.CreateElement("html");
+
+        if (!string.IsNullOrWhiteSpace(metadata?.HtmlLanguage))
+            htmlNode.SetAttributeValue("lang", metadata.HtmlLanguage);
+
         doc.DocumentNode.AppendChild(htmlNode);
 
         var headNode = doc.CreateElement("head");
@@ -49,22 +55,48 @@ public static class ContentFragmentHtmlConverter
         metaSourcePath.SetAttributeValue("content", rootEntity.SourcePath);
         headNode.AppendChild(metaSourcePath);
 
+        AddBlackbirdInteroperabilityMetadata(doc, headNode, metadata);
+
         var bodyNode = doc.CreateElement("body");
         htmlNode.AppendChild(bodyNode);
 
         foreach (var entity in contentFragmentEntities)
         {
-            AppendContentFragment(bodyNode, doc, entity, excludedFieldNames);
+            var keyPrefix = metadata != null ? entity.SourcePath : (string?)null;
+            AppendContentFragment(bodyNode, doc, entity, excludedFieldNames, keyPrefix);
         }
 
         return "<!DOCTYPE html>\n" + doc.DocumentNode.OuterHtml;
+    }
+
+    private static void AddBlackbirdInteroperabilityMetadata(HtmlDocument doc, HtmlNode headNode, BlackbirdMetadata? metadata)
+    {
+        if (metadata == null)
+            return;
+
+        AddMetaTag(doc, headNode, "blackbird-ucid", metadata.Ucid);
+        AddMetaTag(doc, headNode, "blackbird-content-name", metadata.ContentName);
+        AddMetaTag(doc, headNode, "blackbird-system-name", metadata.SystemName);
+        AddMetaTag(doc, headNode, "blackbird-system-ref", metadata.SystemRef);
+    }
+
+    private static void AddMetaTag(HtmlDocument doc, HtmlNode headNode, string name, string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return;
+
+        var metaNode = doc.CreateElement("meta");
+        metaNode.SetAttributeValue("name", name);
+        metaNode.SetAttributeValue("content", System.Net.WebUtility.HtmlEncode(value));
+        headNode.AppendChild(metaNode);
     }
 
     private static void AppendContentFragment(
         HtmlNode bodyNode,
         HtmlDocument doc,
         ContentFragmentHtmlEntity entity,
-        ISet<string> excludedFieldNames)
+        ISet<string> excludedFieldNames,
+        string? keyPrefix)
     {
         var fragmentDivNode = doc.CreateElement("div");
 
@@ -87,7 +119,7 @@ public static class ContentFragmentHtmlConverter
             "data-original-json",
             HttpUtility.HtmlEncode(originalJson.ToString(Formatting.None)));
 
-        AppendTranslatableFields(fragmentDivNode, doc, entity.Fields, excludedFieldNames);
+        AppendTranslatableFields(fragmentDivNode, doc, entity.Fields, excludedFieldNames, keyPrefix);
         bodyNode.AppendChild(fragmentDivNode);
     }
 
@@ -95,7 +127,8 @@ public static class ContentFragmentHtmlConverter
         HtmlNode parentNode,
         HtmlDocument doc,
         JArray fields,
-        ISet<string> excludedFieldNames)
+        ISet<string> excludedFieldNames,
+        string? keyPrefix)
     {
         for (var fieldIndex = 0; fieldIndex < fields.Count; fieldIndex++)
         {
@@ -122,6 +155,9 @@ public static class ContentFragmentHtmlConverter
                 var node = doc.CreateElement("div");
                 node.SetAttributeValue("data-json-path", $"fields[{fieldIndex}].values[{valueIndex}]");
                 node.SetAttributeValue("data-field-name", fieldName ?? $"field-{fieldIndex}");
+
+                if (keyPrefix != null && !string.IsNullOrWhiteSpace(fieldName))
+                    node.SetAttributeValue("data-blackbird-key", $"{keyPrefix}#{fieldName}[{valueIndex}]");
 
                 var stringValue = value.Type == JTokenType.String
                     ? value.ToString()

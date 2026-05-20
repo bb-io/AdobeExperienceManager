@@ -24,4 +24,7 @@ public class DownloadContentRequest : IDownloadContentInput
     [Display("File format", Description = "Format of the file to be downloaded, defaults to an interoperable HTML.")]
     [StaticDataSource(typeof(DownloadFileFormatHandler))]
     public string? FileFormat { get; set; } = "text/html";
+    
+    [Display("Language code", Description = "Language code to be used in the request, e.g. 'en' or 'en-US'. If not specified, we will try to extract it from content path.")]
+    public string? LanguageCode { get; set; }
 }
