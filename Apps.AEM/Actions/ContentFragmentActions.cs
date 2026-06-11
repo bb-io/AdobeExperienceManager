@@ -277,6 +277,112 @@ public class ContentFragmentActions(InvocationContext invocationContext, IFileMa
         }
     }
 
+
+    [Action("Change field tags", Description = "Add or remove tags from a content fragment tag field.")]
+    public async Task<ChangeFieldTagsResponse> ChangeFieldTags([ActionParameter] ChangeFieldTagsRequest input)
+    {
+        var addTags = input.AddTags?
+            .Where(tag => !string.IsNullOrWhiteSpace(tag))
+            .Select(tag => tag.Trim())
+            .ToList()
+            ?? [];
+        var removeTags = input.RemoveTags?
+            .Where(tag => !string.IsNullOrWhiteSpace(tag))
+            .Select(tag => tag.Trim())
+            .ToList()
+            ?? [];
+
+        if (addTags.Count == 0 && removeTags.Count == 0)
+            throw new PluginMisconfigurationException("At least one tag to add or to remove must be provided.");
+
+        ValidateDamPath(input.ContentId);
+
+        if (string.IsNullOrWhiteSpace(input.FieldName))
+            throw new PluginMisconfigurationException("'Field name' is required.");
+
+        var fragmentLookup = await FindFragmentByPathAsync(input.ContentId);
+        IReadOnlyList<string> tags = [];
+
+        for (var attempt = 0; attempt < 2; attempt++)
+        {
+            try
+            {
+                var (fragment, etag) = await GetFragmentWithEtagAsync(fragmentLookup.Id);
+                var fieldIndex = -1;
+                JArray? fieldValues = null;
+
+                for (var i = 0; i < fragment.Fields.Count; i++)
+                {
+                    if (fragment.Fields[i] is not JObject field)
+                        continue;
+
+                    if (!string.Equals(field["name"]?.ToString(), input.FieldName, StringComparison.Ordinal))
+                        continue;
+
+                    if (!string.Equals(field["type"]?.ToString(), "tag", StringComparison.OrdinalIgnoreCase))
+                        throw new PluginMisconfigurationException($"Field '{input.FieldName}' is not a tag field.");
+
+                    fieldIndex = i;
+                    fieldValues = field["values"] as JArray
+                        ?? throw new PluginMisconfigurationException($"Field '{input.FieldName}' does not contain a values array.");
+                    break;
+                }
+
+                if (fieldValues is null)
+                    throw new PluginMisconfigurationException($"Field '{input.FieldName}' was not found.");
+
+                if (fieldValues.Any(value => value.Type != JTokenType.String))
+                    throw new PluginMisconfigurationException($"Field '{input.FieldName}' values must be strings.");
+
+                var removeSet = removeTags.ToHashSet(StringComparer.OrdinalIgnoreCase);
+                var updatedTags = fieldValues.Values<string>()
+                    .Where(tag => !string.IsNullOrWhiteSpace(tag))
+                    .Select(tag => tag!.Trim())
+                    .Where(tag => !removeSet.Contains(tag))
+                    .ToList();
+
+                var existingTags = updatedTags.ToHashSet(StringComparer.OrdinalIgnoreCase);
+                foreach (var tag in addTags)
+                {
+                    if (existingTags.Add(tag))
+                        updatedTags.Add(tag);
+                }
+
+                var patchPayload = new JArray
+                {
+                    new JObject
+                    {
+                        ["op"] = "replace",
+                        ["path"] = $"/fields/{fieldIndex}/values",
+                        ["value"] = new JArray(updatedTags)
+                    }
+                };
+
+                var request = new RestRequest($"{FragmentsEndpoint}/{fragmentLookup.Id}", Method.Patch)
+                    .AddHeader("If-Match", etag)
+                    .AddHeader("Content-Type", "application/json-patch+json")
+                    .AddHeader("Accept", "application/json")
+                    .AddStringBody(patchPayload.ToString(Formatting.None), DataFormat.Json);
+
+                await Client.ExecuteWithErrorHandling(request);
+                tags = updatedTags;
+                break;
+            }
+            catch (PluginApplicationException ex) when (attempt == 0 &&
+                (ex.Message.Contains("412", StringComparison.OrdinalIgnoreCase)
+                 || ex.Message.Contains("Precondition Failed", StringComparison.OrdinalIgnoreCase)
+                 || ex.Message.Contains("PreconditionFailed", StringComparison.OrdinalIgnoreCase)))
+            {
+                // Retry with fresh ETag and latest field values in the next loop iteration
+            }
+        }
+
+        return new ChangeFieldTagsResponse
+        {
+            Tags = tags
+        };
+    }
+
     private async Task<FileReference?> TryDownloadVariationForBlacklakeAsync(
         string fragmentPath,
         string? fragmentTitle,
