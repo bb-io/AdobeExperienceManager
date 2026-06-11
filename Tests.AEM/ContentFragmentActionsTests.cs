@@ -224,6 +224,87 @@ public class ContentFragmentActionsTests : TestBase
 
     [TestMethod]
     [DynamicData(nameof(AllInvocationContexts), DynamicDataDisplayName = nameof(GetConnectionTypeName))]
+    public async Task ChangeFieldTags_AddTag_ShouldBeSuccessful(InvocationContext context)
+    {
+        var actions = new ContentFragmentActions(context, FileManager);
+        const string tagId = "raye:translations/ready-for-translation";
+
+        await actions.ChangeFieldTags(new ChangeFieldTagsRequest
+        {
+            ContentId = SampleContentFragmentPath,
+            FieldName = "tags",
+            RemoveTags = [tagId]
+        });
+
+        var result = await actions.ChangeFieldTags(new ChangeFieldTagsRequest
+        {
+            ContentId = SampleContentFragmentPath,
+            FieldName = "tags",
+            AddTags = [tagId]
+        });
+
+        Assert.IsTrue(result.Tags.Contains(tagId), "Tag was not added.");
+    }
+
+    [TestMethod]
+    [DynamicData(nameof(AllInvocationContexts), DynamicDataDisplayName = nameof(GetConnectionTypeName))]
+    public async Task ChangeFieldTags_RemoveTag_ShouldBeSuccessful(InvocationContext context)
+    {
+        var actions = new ContentFragmentActions(context, FileManager);
+        const string tagId = "raye:translations/ready-for-translation";
+
+        await actions.ChangeFieldTags(new ChangeFieldTagsRequest
+        {
+            ContentId = SampleContentFragmentPath,
+            FieldName = "tags",
+            AddTags = [tagId]
+        });
+
+        var result = await actions.ChangeFieldTags(new ChangeFieldTagsRequest
+        {
+            ContentId = SampleContentFragmentPath,
+            FieldName = "tags",
+            RemoveTags = [tagId]
+        });
+
+        Assert.IsFalse(result.Tags.Contains(tagId), "Tag was not removed.");
+    }
+
+    [TestMethod]
+    [DynamicData(nameof(AllInvocationContexts), DynamicDataDisplayName = nameof(GetConnectionTypeName))]
+    public async Task ChangeFieldTags_AddAndRemoveTags_ShouldBeSuccessful(InvocationContext context)
+    {
+        var actions = new ContentFragmentActions(context, FileManager);
+        const string tagIdToAdd = "raye:translations/ready-for-translation";
+        const string tagIdToRemove = "raye:market/country/japan";
+
+        await actions.ChangeFieldTags(new ChangeFieldTagsRequest
+        {
+            ContentId = SampleContentFragmentPath,
+            FieldName = "tags",
+            RemoveTags = [tagIdToAdd]
+        });
+        await actions.ChangeFieldTags(new ChangeFieldTagsRequest
+        {
+            ContentId = SampleContentFragmentPath,
+            FieldName = "tags",
+            AddTags = [tagIdToRemove]
+        });
+
+        var result = await actions.ChangeFieldTags(new ChangeFieldTagsRequest
+        {
+            ContentId = SampleContentFragmentPath,
+            FieldName = "tags",
+            AddTags = [tagIdToAdd],
+            RemoveTags = [tagIdToRemove]
+        });
+
+        Assert.IsTrue(result.Tags.Contains(tagIdToAdd), "Tag was not added in combined request.");
+        Assert.IsFalse(result.Tags.Contains(tagIdToRemove), "Tag was not removed in combined request.");
+    }
+
+    [TestMethod]
+    [DynamicData(nameof(AllInvocationContexts), DynamicDataDisplayName = nameof(GetConnectionTypeName))]
     public async Task UploadContentFragment_WithHtmlInput_ShouldSucceed(InvocationContext context)
     {
         var actions = new ContentFragmentActions(context, FileManager);
