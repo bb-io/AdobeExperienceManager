@@ -162,7 +162,7 @@ public class ContentPollingList(InvocationContext invocationContext) : Invocable
 
         var response = new PollingEventResponse<ContentFragmentTagMemory, OnContentFragmentTagAddedResponse>
         {
-            Memory = new ContentFragmentTagMemory { ObservedFragmentTags = currentSnapshot }
+            Memory = new ContentFragmentTagMemory { ObservedFragmentTags = currentSnapshot.ToList() }
         };
 
         if (request.Memory == null)
@@ -172,9 +172,8 @@ public class ContentPollingList(InvocationContext invocationContext) : Invocable
             return response;
         }
 
-        var previousSnapshot = new HashSet<string>(
-            request.Memory.ObservedFragmentTags ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase),
-            StringComparer.OrdinalIgnoreCase);
+        var previousSnapshot = request.Memory.ObservedFragmentTags.ToHashSet(StringComparer.OrdinalIgnoreCase)
+            ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         var addedItems = fragmentStates
             .Select(state => new ContentFragmentTagAddedItemResponse
