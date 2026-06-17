@@ -172,7 +172,7 @@ public class ContentPollingList(InvocationContext invocationContext) : Invocable
             return response;
         }
 
-        var previousSnapshot = request.Memory.ObservedFragmentTags.ToHashSet(StringComparer.OrdinalIgnoreCase)
+        var previousSnapshot = request.Memory?.ObservedFragmentTags?.ToHashSet(StringComparer.OrdinalIgnoreCase)
             ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         var addedItems = fragmentStates
