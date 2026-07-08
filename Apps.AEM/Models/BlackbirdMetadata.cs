@@ -8,7 +8,9 @@ public class BlackbirdMetadata
 
     public string? ContentName { get; init; }
 
-    public string SystemName => "AEM (Adobe Experience Manager)";
+    public const string AemSystemName = "AEM (Adobe Experience Manager)";
+
+    public string SystemName => AemSystemName;
 
     public string SystemRef { get; init; } = string.Empty;
 }

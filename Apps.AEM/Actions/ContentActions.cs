@@ -13,6 +13,8 @@ using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.SDK.Blueprints;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using Blackbird.Applications.Sdk.Utils.Extensions.Files;
+using Blackbird.Filters.Constants;
+using Blackbird.Filters.Extensions;
 using Blackbird.Filters.Transformations;
 using Blackbird.Filters.Xliff.Xliff2;
 using HtmlAgilityPack;
@@ -127,9 +129,11 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
 
         var inputString = System.Text.Encoding.UTF8.GetString(bytes);
 
+        Transformation? transformation = null;
         if (Xliff2Serializer.IsXliff2(inputString))
         {
-            inputString = Transformation.Parse(inputString, input.Content.Name).Target().Serialize()
+            transformation = Transformation.Parse(inputString, input.Content.Name);
+            inputString = transformation.Target().Serialize()
                 ?? throw new PluginMisconfigurationException("XLIFF did not contain any files");
         }
 
@@ -190,7 +194,10 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
 
                     if (!isJsonInput)
                     {
-                        rootResult.TargetFile = await TryDownloadTargetForBlacklakeAsync(entity.SourcePath, targetPath,
+                        rootResult.TargetFile = await BuildTargetFileForBlacklakeAsync(
+                            input.Content,
+                            transformation,
+                            entity.SourcePath,
                             input.GetCleanTargetLanguage());
                     }
                 }
@@ -420,24 +427,27 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
         return path.Replace(sourceLanguage, targetLanguage);
     }
 
-    private async Task<FileReference?> TryDownloadTargetForBlacklakeAsync(string originalSourcePath, string targetPath, string targetLanguage)
+    private async Task<FileReference?> BuildTargetFileForBlacklakeAsync(
+        FileReference inputFile,
+        Transformation? transformation,
+        string originalSourcePath,
+        string targetLanguage)
     {
         try
         {
-            var request = new RestRequest("/content/services/bb-aem-connector/content-exporter.json")
-                .AddQueryParameter("contentPath", targetPath);
+            if (transformation is null)
+                return inputFile;
 
-            var response = await Client.ExecuteWithErrorHandling(request);
-            if (string.IsNullOrEmpty(response.Content))
-                return null;
+            TransformationTargetMetadata.ApplyAemTarget(
+                transformation,
+                originalSourcePath,
+                targetLanguage,
+                Credentials.GetBaseUrl());
 
-            var jsonObj = JsonConvert.DeserializeObject<JObject>(response.Content);
-            var metadata = BlackbirdMetadataFactory.Create(Credentials, targetPath, jsonObj, ucidOverride: originalSourcePath, languageOverride: targetLanguage);
-            var htmlString = JsonToHtmlConverter.ConvertToHtml(response.Content, targetPath, [], metadata);
-
-            var filename = ContentPathToFilenameConverter.PathToFilename(targetPath);
-            var memoryStream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(htmlString)) { Position = 0 };
-            return await fileManagementClient.UploadAsync(memoryStream, "text/html", $"{filename}.html");
+            return await fileManagementClient.UploadAsync(
+                transformation.Serialize().ToStream(),
+                MediaTypes.Xliff,
+                transformation.XliffFileName);
         }
         catch
         {
