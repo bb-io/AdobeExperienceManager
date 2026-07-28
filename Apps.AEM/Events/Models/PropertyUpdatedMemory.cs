@@ -2,5 +2,5 @@
 
 public class PropertyUpdateMemory
 {
-    public HashSet<string> ObservedPaths { get; set; }
+    public List<string> ObservedPaths { get; set; } = [];
 }

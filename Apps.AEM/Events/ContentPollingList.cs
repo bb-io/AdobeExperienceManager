@@ -198,8 +198,8 @@ public class ContentPollingList(InvocationContext invocationContext) : Invocable
 
     [PollingEvent("On property updated", Description = "Triggered when a page under the root path has a specific property updated to match a provided value.")]
     public async Task<PollingEventResponse<PropertyUpdateMemory, OnPropertyUpdatedResponse>> OnPropertyUpdatedAsync(
-    PollingEventRequest<PropertyUpdateMemory> request,
-    [PollingEventParameter] OnPropertyUpdatedRequest input)
+        PollingEventRequest<PropertyUpdateMemory> request,
+        [PollingEventParameter] OnPropertyUpdatedRequest input)
     {
         var queryBuilderRequest = new RestRequest("/bin/querybuilder.json")
             .AddQueryParameter("path", input.RootPath)
@@ -216,11 +216,11 @@ public class ContentPollingList(InvocationContext invocationContext) : Invocable
         var contentFound = queryBuilderResponse.Hits
             .Where(hit => !string.IsNullOrWhiteSpace(hit.Path))
             .Select(hit => hit.Path.Replace("/jcr:content", ""))
-            .ToHashSet();
+            .Distinct()
+            .ToList();
 
-        var previouslyObserved = request.Memory?.ObservedPaths ?? new HashSet<string>();
-
-        var newlyMatchedContent = contentFound.Except(previouslyObserved).ToList();
+        var previouslyObserved = new HashSet<string>(request.Memory?.ObservedPaths ?? []);
+        var newlyMatchedContent = contentFound.Where(path => !previouslyObserved.Contains(path)).ToList();
 
         var response = new PollingEventResponse<PropertyUpdateMemory, OnPropertyUpdatedResponse>
         {
