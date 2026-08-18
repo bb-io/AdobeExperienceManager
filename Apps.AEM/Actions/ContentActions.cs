@@ -268,7 +268,7 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
 
     [Action("Get content text property", Description = "Get a single string property value from a site page.")]
     public async Task<GetContentTextPropertyResponse> GetContentTextProperty(
-     [ActionParameter] GetPropertyValueRequest input)
+        [ActionParameter] GetPropertyValueRequest input)
     {
         var path = BuildJcrContentPath(input.ContentId);
         var request = new RestRequest($"{path}.json", Method.Get);
@@ -287,12 +287,13 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
             };
         }
 
-        throw new PluginMisconfigurationException($"Property '{input.PropertyName}' not found at {path}.");
+        InvocationContext.Logger?.LogWarning($"Property '{input.PropertyName}' was not found at {path}. The action will return an empty value", []);
+        return new GetContentTextPropertyResponse { Value = string.Empty };
     }
 
     [Action("Get content array property", Description = "Get a multi-value property from a site.")]
     public async Task<GetContentArrayPropertyResponse> GetContentArrayProperty(
-    [ActionParameter] GetPropertyValueRequest input)
+        [ActionParameter] GetPropertyValueRequest input)
     {
         var path = BuildJcrContentPath(input.ContentId);
         var request = new RestRequest($"{path}.json", Method.Get);
@@ -319,7 +320,8 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
             };
         }
 
-        throw new PluginMisconfigurationException($"Property '{input.PropertyName}' not found at {path}.");
+        InvocationContext.Logger?.LogWarning($"Property '{input.PropertyName}' was not found at {path}. The action will return an empty value", []);
+        return new GetContentArrayPropertyResponse { Values = [] };
     }
 
     [Action("Update content property", Description = "Updates or creates a property on a site page.")]
