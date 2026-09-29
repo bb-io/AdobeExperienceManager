@@ -1,3 +1,5 @@
+using Apps.AEM.Constants;
+using Apps.AEM.Models.Dtos;
 using Apps.AEM.Models.Entities;
 using Apps.AEM.Models.Requests;
 using Apps.AEM.Models.Responses;
@@ -16,7 +18,6 @@ using Blackbird.Applications.Sdk.Utils.Extensions.Files;
 using Blackbird.Filters.Constants;
 using Blackbird.Filters.Extensions;
 using Blackbird.Filters.Transformations;
-using Blackbird.Filters.Xliff.Xliff2;
 using HtmlAgilityPack;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -28,8 +29,7 @@ namespace Apps.AEM.Actions;
 [ActionList("Content")]
 public class ContentActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) : Invocable(invocationContext)
 {
-    [Action("Search content", Description = "Search for content using specific criteria.")]
-    [BlueprintActionDefinition(BlueprintAction.SearchContent)]
+    [Action("Search content (deprecated)", Description = "Search for content using specific criteria.")]
     public async Task<SearchContentResponse> SearchContent([ActionParameter] SearchContentRequest input)
     {
         var actionTime = DateTime.UtcNow;
@@ -48,6 +48,45 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
         var contentResults = await Client.Paginate<ContentResponse>(searchRequest);
 
         return new(contentResults);
+    }
+
+    [Action("Search content", Description = "Search for content using specific criteria.")]
+    [BlueprintActionDefinition(BlueprintAction.SearchContent)]
+    public async Task<SearchContentResponse> SearchContentWithQueryBuilder(
+        [ActionParameter] SearchContentQueryBuilderRequest input)
+    {
+        var request = ContentSearch.BuildQueryBuilderRequest(input);
+        var response = await Client.ExecuteWithErrorHandling<GetPathByTagQueryBuilderResponseDto>(request);
+        if (!response.Success)
+            throw new PluginApplicationException("AEM QueryBuilder search failed (success=false).");
+
+        var isPage = (input.ContentType ?? ContentTypes.Page) == ContentTypes.Page;
+        var items = response.Hits.Select(hit =>
+        {
+            // Selective hits contain child objects, not flattened slash-separated properties.
+            var content = hit.AdditionalData.TryGetValue("jcr:content", out var child) ? child as JObject : null;
+            var created = ContentSearch.ParseQueryBuilderDate(hit.AdditionalData.TryGetValue("jcr:created", out var date) ? date : null);
+            var modified = ContentSearch.ParseQueryBuilderDate(content?["cq:lastModified"])
+                ?? ContentSearch.ParseQueryBuilderDate(content?["jcr:lastModified"]);
+            var titles = isPage
+                ? new[] { content?.Value<string>("pageTitle"), content?.Value<string>("jcr:title"), hit.Path.Split('/').Last() }
+                : new[] { content?.Value<string>("jcr:title"), content?.Value<string>("fmditaTitle") };
+
+            // The plugin suppresses modification dates equal to creation at second precision.
+            if (created.HasValue && modified.HasValue &&
+                created.Value.ToUniversalTime().Ticks / TimeSpan.TicksPerSecond == modified.Value.ToUniversalTime().Ticks / TimeSpan.TicksPerSecond)
+                modified = null;
+
+            return new ContentResponse
+            {
+                ContentId = hit.Path,
+                Title = titles.FirstOrDefault(title => !string.IsNullOrWhiteSpace(title)) ?? string.Empty,
+                Created = created ?? default,
+                Modified = modified ?? default
+            };
+        }).ToList();
+
+        return new(items);
     }
 
     [Action("Download content", Description = "Download content as interoperable HTML or the original JSON.")]
@@ -129,13 +168,8 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
 
         var inputString = System.Text.Encoding.UTF8.GetString(bytes);
 
-        Transformation? transformation = null;
-        if (Xliff2Serializer.IsXliff2(inputString))
-        {
-            transformation = Transformation.Parse(inputString, input.Content.Name);
-            inputString = transformation.Target().Serialize()
-                ?? throw new PluginMisconfigurationException("XLIFF did not contain any files");
-        }
+        var (targetContent, transformation) = XliffContentConverter.ToTarget(inputString, input.Content.Name);
+        inputString = targetContent;
 
         if (GuidesActions.IsDita(inputString))
             throw new PluginMisconfigurationException("Use 'Upload guides content' action to upload dita maps and topics.");
@@ -448,8 +482,8 @@ public class ContentActions(InvocationContext invocationContext, IFileManagement
 
             return await fileManagementClient.UploadAsync(
                 transformation.Serialize().ToStream(),
-                MediaTypes.Xliff,
-                transformation.XliffFileName);
+                MediaTypes.Xliff2,
+                transformation.BilingualFileName);
         }
         catch
         {

@@ -11,9 +11,6 @@ using Blackbird.Applications.Sdk.Common.Exceptions;
 using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
-using Blackbird.Filters.Extensions;
-using Blackbird.Filters.Transformations;
-using Blackbird.Filters.Xliff.Xliff2;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RestSharp;
@@ -178,13 +175,10 @@ public class ContentFragmentActions(InvocationContext invocationContext, IFileMa
             throw new PluginMisconfigurationException("'Variation title' is required.");
 
         var fileStream = await fileManagementClient.DownloadAsync(input.Content);
-        var inputString = await fileStream.ReadString();
+        using var reader = new StreamReader(fileStream);
+        var inputString = await reader.ReadToEndAsync();
 
-        if (Xliff2Serializer.IsXliff2(inputString))
-        {
-            inputString = Transformation.Parse(inputString, input.Content.Name).Target().Serialize()
-                ?? throw new PluginMisconfigurationException("XLIFF did not contain any files");
-        }
+        (inputString, _) = XliffContentConverter.ToTarget(inputString, input.Content.Name);
 
         var entities = HtmlToJsonConverter.ConvertToJson(inputString);
         var rootEntity = entities.SingleOrDefault(entity => !entity.ReferenceContent)

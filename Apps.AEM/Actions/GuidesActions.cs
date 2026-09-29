@@ -2,13 +2,12 @@
 using Apps.AEM.Models.Requests;
 using Apps.AEM.Models.Responses;
 using Apps.AEM.Utils.Converters;
+using Apps.AEM.Utils.Converters.InteroperableContent;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Exceptions;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
-using Blackbird.Filters.Transformations;
-using Blackbird.Filters.Xliff.Xliff2;
 using RestSharp;
 using System.Text;
 using System.Xml.Serialization;
@@ -124,11 +123,7 @@ public class GuidesActions(InvocationContext invocationContext, IFileManagementC
         using var reader = new StreamReader(fileStream, Encoding.UTF8);
         var inputString = await reader.ReadToEndAsync();
 
-        if (Xliff2Serializer.IsXliff2(inputString))
-        {
-            inputString = Transformation.Parse(inputString, input.Content.Name).Target().Serialize()
-                ?? throw new PluginMisconfigurationException("XLIFF did not contain any files");
-        }
+        (inputString, _) = XliffContentConverter.ToTarget(inputString, input.Content.Name);
 
         if (!IsDita(inputString))
             throw new PluginMisconfigurationException("Cannot detect DITA file. Use dedicated action to upload sites content or assets.");
