@@ -101,7 +101,20 @@ Navigate to your project's translation rules in the `/content` section, click "A
 
 ## Actions
 
-- **Search content**: Search for content based on provided criteria.
+- **Search content**: Search pages and experience fragments (default), assets and content fragments, DITA files, or raw files using native AEM QueryBuilder.
+   - **Root path**: Searches below this path; surrounding whitespace is trimmed. An omitted path leaves the search unrestricted.
+   - **Include root content**: Defaults to true. The root item is eligible when it matches all filters. Set false to search descendants only. Filters and the result limit still apply, so root inclusion does not guarantee the root will appear.
+   - **Tags / Keyword**: Matches at least one supplied tag and applies AEM full-text search. These filters combine with the path, content type, and dates using AND.
+   - **Name pattern**: Matches the page name or filename, rather than its title or full path. Supports `*` (zero or more characters), `?` (one character), and `[abc]` (one listed character). Examples: `about-*`, `*.dita`.
+   - **Property name / Property value**: Supply both to match an exact stored property value. Use a relative property path, such as `jcr:content/jcr:title` with value `About Us` for a page. Values are preserved without trimming; wildcards are literal. For a multi-value property, any matching value qualifies.
+   - **Exclude path**: A regular expression matched against the full content path. For example, `.*/archive(/.*)?` excludes archive nodes and their descendants. A literal path excludes only that exact path; regex metacharacters must be escaped when intended literally. AEM applies this filter server-side before returning results. The exclusion predicate cannot use a search index, so use a narrow root path and other indexed filters to reduce candidate nodes. **Max items to return** limits returned results, not the number of nodes AEM may examine. See the [Adobe predicate reference](https://experienceleague.adobe.com/en/docs/experience-manager-cloud-service/content/implementing/developing/full-stack/search/query-builder-predicates#excludepaths).
+   - Name, property, and exclusion filters combine with all other criteria using AND. They do not change the result limit or output fields.
+   - **Created or modified after / before**: Optional, exclusive date bounds. Neither has a default. Supply either or both; the start must precede the end. Dates without a time zone are treated as UTC. Local dates are converted to UTC.
+   - **Events**: With date bounds, select created, modified, or both (default). Both matches either timestamp within the supplied bounds. Without date bounds this input has no filtering effect.
+   - **Max items to return**: Defaults to 100 and must be positive. The action makes one bounded request; it does not fetch further pages. Ordering is unspecified.
+   - **Output**: Content items retain content path, title, created at, and modified at. Total count is the number of returned items, not the estimated number of all matches. Missing dates use the existing output model's default date value. Native QueryBuilder timestamps can have only second precision, while the deprecated action can preserve milliseconds.
+   - **Permissions**: Uses the connection account's read permissions. Results can differ from plugin searches, which use the plugin service account. No plugin update or deployment is required.
+- **Search content (deprecated)**: Existing plugin-based search retained for workflow compatibility, with its original inputs, outputs, pagination, and date defaults (five years ago through the current time). Existing workflows continue to call this action. New search blueprints use **Search content**.
 - **Download content**: Download content as HTML. Requires a content ID. This action supports the following optional input:
    - **Include reference content**: If set to true, referenced content (other pages, content fragments, experience fragments, etc.) will be included in the downloaded HTML.
 - **Upload content**: Upload content from HTML. Requires an HTML file and target path as input. This action supports the following inputs:
@@ -144,6 +157,66 @@ Workflow steps:
 ![Utility example](docs/images/utility_example.png)
 
 - The `Upload content` action uploads the translated content back to AEM.
+
+
+## Search content examples
+
+Use the **Search content** action for these examples. Replace the WKND sample paths and values with content from your instance. Leave inputs not shown empty: the default content type is pages and experience fragments, no date bounds apply, and at most 100 matching items are returned. Results depend on the connection account's read permissions.
+
+### Include content under a path
+
+| Input | Value |
+| --- | --- |
+| Root path | `/content/wknd/language-masters/en` |
+| Include root content | `false` |
+| Content type | `Pages and experience fragments` |
+
+This search returns descendant pages of the English root page.
+
+To include only pages whose names match a pattern, add **Name pattern** = `about-*`. This matches the final segment of the content path, such as `about-us` in `/content/wknd/language-masters/en/about-us`, rather than the page title or full path. Other patterns include `about-?s` and `about-[u]s`. For DITA filenames, use `*.dita` with the appropriate **Content type** and DAM root path.
+
+### Search by a property
+
+| Input | Value |
+| --- | --- |
+| Root path | `/content/wknd/language-masters/en` |
+| Property name | `jcr:content/jcr:title` |
+| Property value | `About Us` |
+
+This finds pages with the stored title `About Us`. Supply both property inputs. The property path is relative to each matching item, and the value must match exactly. For a multi-value property, one matching value is enough.
+
+These inputs also support filtering content by custom properties.
+
+### Exclude a page or branch
+
+| Input | Value |
+| --- | --- |
+| Root path | `/content/wknd/language-masters/en` |
+| Exclude path | `/content/wknd/language-masters/en/adventures(/.*)?` |
+
+This searches the English hierarchy while excluding the `adventures` page and all its descendants. To exclude only one page, use `/content/wknd/language-masters/en/about-us`; its descendants remain eligible. To exclude every branch named `archive` under the search root, use `.*/archive(/.*)?`.
+
+**Exclude path** uses a regular expression against the full path, unlike the wildcard syntax of **Name pattern**. Escape regex metacharacters in literal names: for example, `.*/brochure\.pdf` excludes a file named `brochure.pdf`.
+
+AEM applies exclusions server-side before returning results, but exclusion cannot use a search index. Narrow the root path and other filters to reduce the work AEM performs. **Max items to return** caps returned items, not the number of nodes AEM may examine.
+
+### Combine filters
+
+| Input | Value |
+| --- | --- |
+| Root path | `/content/wknd/language-masters/en` |
+| Include root content | `false` |
+| Name pattern | `about-*` |
+| Property name | `jcr:content/jcr:title` |
+| Property value | `About Us` |
+| Exclude path | `.*/archive(/.*)?` |
+| Created or modified after | `2026-09-01T00:00:00Z` |
+| Events (all by default) | `Modified` |
+| Max items to return | `10` |
+
+This returns up to 10 descendant pages whose names match `about-*`, whose stored title is exactly `About Us`, and whose modification date is strictly after September 1, 2026 at midnight UTC. Pages in an `archive` branch are excluded. Every condition must hold; no matches produces an empty result.
+
+You can also add **Tags**, such as `default:ready-for-translation` and `workflow:wcm/ready-for-translation`, as separate list entries. A page must match at least one supplied tag **and** every other filter.
 
 ## Demo video
 
