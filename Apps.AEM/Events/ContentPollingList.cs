@@ -104,15 +104,14 @@ public class ContentPollingList(InvocationContext invocationContext) : Invocable
                 .ToHashSet();
         }
 
-        var previoslyObservedContent = request.Memory?.ContentWithTagsObserved ?? new HashSet<string>();
-
-        var newContentWithTags = contentFound.Except(previoslyObservedContent);
+        var previouslyObservedContent = request.Memory?.ContentWithTagsObserved ?? [];
+        var newContentWithTags = contentFound.Except(previouslyObservedContent).ToList();
 
         var response = new PollingEventResponse<TagsMemory, OnTagAddedContentResponse>
         {
             Memory = new TagsMemory
             {
-                ContentWithTagsObserved = previoslyObservedContent.Union(newContentWithTags).ToHashSet(),
+                ContentWithTagsObserved = previouslyObservedContent.Union(newContentWithTags).ToList(),
             }
         };
 
@@ -155,7 +154,7 @@ public class ContentPollingList(InvocationContext invocationContext) : Invocable
 
         var fragmentStates = string.IsNullOrWhiteSpace(fieldForTags)
             ? await GetContentFragmentObservedStatesAsync(rootPath, watchedTags, statuses)
-            : await GetContentFragmentObservedStatesFromFieldAsync(rootPath, watchedTags, statuses, fieldForTags);
+            : await GetContentFragmentObservedStatesFromFieldAsync(rootPath, watchedTags, fieldForTags);
         var currentSnapshot = fragmentStates
             .SelectMany(state => state.Tags.Select(tag => BuildObservedFragmentTagKey(state.Path, tag)))
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
@@ -301,7 +300,6 @@ public class ContentPollingList(InvocationContext invocationContext) : Invocable
     private async Task<List<ObservedContentFragmentState>> GetContentFragmentObservedStatesFromFieldAsync(
         string rootPath,
         HashSet<string> watchedTags,
-        IEnumerable<string> statuses,
         string fieldForTags)
     {
         var fieldTagProperty = $"jcr:content/data/master/{fieldForTags}";

@@ -3,7 +3,6 @@ using Apps.AEM.Events;
 using Apps.AEM.Events.Models;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.Sdk.Common.Polling;
-using Newtonsoft.Json;
 using System.Reflection;
 using Tests.AEM.Base;
 
@@ -102,7 +101,7 @@ public class PagePollingListTests : TestBase
         {
             Memory = new()
             {
-                ContentWithTagsObserved = new HashSet<string>() // { "/content/test-site/en/Homepage" }
+                ContentWithTagsObserved = new List<string>() // { "/content/test-site/en/Homepage" }
             },
             PollingTime = testRunTime
         };
@@ -134,7 +133,7 @@ public class PagePollingListTests : TestBase
         {
             Memory = new()
             {
-                ContentWithTagsObserved = new HashSet<string>() // { "/content/test-site/en/Homepage" }
+                ContentWithTagsObserved = new List<string>() // { "/content/test-site/en/Homepage" }
             },
             PollingTime = DateTime.UtcNow
         };
@@ -167,7 +166,7 @@ public class PagePollingListTests : TestBase
         {
             Memory = new()
             {
-                ObservedFragmentTags = new HashSet<string>() // { "/content/test-site/en/Homepage" }
+                ObservedFragmentTags = new List<string>() // { "/content/test-site/en/Homepage" }
             },
             PollingTime = DateTime.UtcNow
         };

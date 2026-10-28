@@ -2,5 +2,5 @@
 
 public class TagsMemory
 {
-    public ISet<string> ContentWithTagsObserved { get; set; } = new HashSet<string>();
+    public List<string> ContentWithTagsObserved { get; set; } = [];
 }
