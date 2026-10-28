@@ -6,6 +6,9 @@ using Apps.AEM.Models.Dtos;
 using Newtonsoft.Json;
 using System.Collections.Concurrent;
 using System.Text;
+using Blackbird.Applications.Sdk.Common.Exceptions;
+using Polly;
+using Polly.Retry;
 
 namespace Apps.AEM.Services;
 
@@ -14,6 +17,18 @@ public static class TokenService
     private static readonly ConcurrentDictionary<string, TokenCacheItem> AccessTokenCache = new();
     private static readonly ConcurrentDictionary<string, RSAWrapper> RsaCache = new();
     private static readonly TimeSpan DefaultTokenLifetime = TimeSpan.FromMinutes(55);
+    
+    private static readonly ResiliencePipeline<RestResponse> ImsRetryPipeline = new ResiliencePipelineBuilder<RestResponse>()
+        .AddRetry(new RetryStrategyOptions<RestResponse>
+        {
+            MaxRetryAttempts = 2,
+            Delay = TimeSpan.FromSeconds(5),
+            BackoffType = DelayBackoffType.Exponential,
+            UseJitter = true,
+            ShouldHandle = new PredicateBuilder<RestResponse>()
+                .HandleResult(r => r.ResponseStatus is ResponseStatus.TimedOut or ResponseStatus.Error || (int)r.StatusCode >= 500)
+        })
+        .Build();
 
     private class TokenCacheItem
     {
@@ -53,23 +68,25 @@ public static class TokenService
         {
             return cacheItem.Token;
         }
-
-        var tokenRequest = new RestRequest("/ims/exchange/jwt", Method.Post);
-
-        tokenRequest.AddHeader("Cache-Control", "no-cache");
-        tokenRequest.AlwaysMultipartFormData = true;
-
-        tokenRequest.AddParameter("client_id", technicalAccount.ClientId);
-        tokenRequest.AddParameter("client_secret", technicalAccount.ClientSecret);
-        tokenRequest.AddParameter("jwt_token", GetJwtToken(credentials));
-
-        var imsEndpoint = credentials.GetImsEndpoint();
-        var client = new RestClient($"https://{imsEndpoint}");
-        var response = await client.ExecuteAsync(tokenRequest);
-        if (!response.IsSuccessful)
+        
+        using var client = new RestClient(new RestClientOptions($"https://{credentials.GetImsEndpoint()}")
         {
-            throw new Exception($"Failed to get access token: {response.ErrorMessage} - {response.Content}");
-        }
+            MaxTimeout = 20_000 //  ms; the JWT dies after 30s anyway
+        });
+        
+        var response = await ImsRetryPipeline.ExecuteAsync(async ct =>
+        {
+            var tokenRequest = new RestRequest("/ims/exchange/jwt", Method.Post) { AlwaysMultipartFormData = true }
+                .AddHeader("Cache-Control", "no-cache")
+                .AddParameter("client_id", technicalAccount.ClientId)
+                .AddParameter("client_secret", technicalAccount.ClientSecret)
+                .AddParameter("jwt_token", GetJwtToken(credentials));
+
+            return await client.ExecuteAsync(tokenRequest, ct);
+        });
+        
+        if (!response.IsSuccessful)
+            throw new PluginApplicationException($"Failed to get access token: {response.ErrorMessage} - {response.Content}");
 
         var accessToken = DeserializeAccessToken(response.Content!);
 
