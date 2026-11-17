@@ -6,7 +6,7 @@
         <Nullable>enable</Nullable>
         <Product>AEM</Product>
         <Description>AEM (Adobe Experience Manager) is a Content Management System (CMS) that allows users and companies to easily build websites, apps, and manage web pages and content. AEM is used by developers and marketers to organize and distribute content across digital channels.</Description>
-        <Version>1.4.28</Version>
+        <Version>1.4.29</Version>
         <PackageId>Apps.AEM</PackageId>
         <AssemblyName>Apps.AEM</AssemblyName>
     </PropertyGroup>
@@ -23,8 +23,6 @@
         <EmbeddedResource CopyToOutputDirectory="Always" Include="image\icon.png" />
     </ItemGroup>
 	<ItemGroup>
-		<EmbeddedResource Include="..\README.md">
-			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
-		</EmbeddedResource>
+		<EmbeddedResource Include="..\README.md" Link="README.md" CopyToOutputDirectory="Always" />
 	</ItemGroup>
 </Project>
